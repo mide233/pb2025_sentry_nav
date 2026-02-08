@@ -46,7 +46,9 @@ USER $USERNAME
 RUN export ROSDISTRO_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/rosdistro/index-v4.yaml && rosdep update || true
 
 RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \
-    && rosdep install -r --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y || true \
+    && rosdep install -r --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y || true
+
+RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \
     && sudo gdown https://drive.google.com/uc\?id\=1kAxdOU-mi1TcLssyKmDR0pz0ojF96jQ4 -O /tmp/simulation_pcd.zip && \
     sudo unzip /tmp/simulation_pcd.zip -d /home/ws/src/pb2025_nav_bringup/pcd/simulation/ && \
     sudo rm /tmp/simulation_pcd.zip
