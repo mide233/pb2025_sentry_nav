@@ -19,3 +19,12 @@
 [submodule "pointcloud_to_laserscan"]
 	path = src/pointcloud_to_laserscan
 	url = https://github.com/SMBU-PolarBear-Robotics-Team/pointcloud_to_laserscan.git
+[submodule "src/robot_description"]
+	path = src/robot_description
+	url = https://github.com/SMBU-PolarBear-Robotics-Team/pb2025_robot_description
+[submodule "src/sdformat_tools"]
+	path = src/sdformat_tools
+	url = https://github.com/gezp/sdformat_tools
+[submodule "src/rmoss_gz_resources"]
+	path = src/rmoss_gz_resources
+	url = https://github.com/SMBU-PolarBear-Robotics-Team/rmoss_gz_resources
