@@ -32,16 +32,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget -O ./llvm-snapshot.gpg.key https://apt.llvm.org/llvm-snapshot.gpg.key && \
     apt-key add ./llvm-snapshot.gpg.key && \
     rm ./llvm-snapshot.gpg.key && \
-    echo "deb https://mirrors.tuna.tsinghua.edu.cn/llvm-apt/jammy/ llvm-toolchain-jammy main" > /etc/apt/sources.list.d/llvm-apt.list && \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/llvm-apt/jammy/ llvm-toolchain-jammy-14 main" > /etc/apt/sources.list.d/llvm-apt.list && \
     apt-get update && \
-    version=`apt-cache search clangd- | grep clangd- | awk -F' ' '{print $1}' | sort -V | tail -1 | cut -d- -f2` && \
-    apt-get install -y --no-install-recommends clangd-$version && \
+    apt-get install -y --no-install-recommends clang-14 clangd-14 clang-format-14 && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 50 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 50 && \
-    update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-$version 50
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 50 && \
+    update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 50 && \
+    update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 50
 
-RUN sudo apt update && \
-    sudo apt install clangd clang clang-format python3-pip curl wget htop vim unzip -y && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip curl wget htop vim unzip && \
     pip install xmacro gdown
 
 # Install small_gicp
