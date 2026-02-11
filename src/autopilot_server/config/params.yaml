@@ -1,0 +1,6 @@
+autopilot_server:
+  ros__parameters:
+    pilot_data_sending_host: 127.0.0.1
+    pilot_data_sending_port: 42331
+    state_data_receiving_host: 127.0.0.1
+    state_data_receiving_port: 42330
