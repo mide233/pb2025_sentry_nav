@@ -45,6 +45,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends python3-pip curl wget htop vim unzip && \
     pip install xmacro gdown
 
+RUN apt install -y ros-$ROS_DISTRO-foxglove-bridge
+
 # Install small_gicp
 RUN apt install -y libeigen3-dev libomp-dev && \
     mkdir -p /tmp/small_gicp && \
@@ -57,6 +59,7 @@ RUN apt install -y libeigen3-dev libomp-dev && \
     make install && \
     rm -rf /tmp/small_gicp
 
+RUN echo "export ROS_DOMAIN_ID=12" >> /home/$USERNAME/.bashrc
 RUN echo 'export PATH=$PATH:/home/ws/.script' >> /home/$USERNAME/.bashrc
 RUN echo 'alias wsi="source /opt/ros/humble/setup.bash"' >> /home/$USERNAME/.bashrc
 RUN echo 'alias ini="source install/setup.bash"' >> /home/$USERNAME/.bashrc
