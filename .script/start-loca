@@ -1,4 +1,9 @@
 #! /bin/bash
 source /home/ws/.script/envinit.bash
 export DISPLAY=:0
-ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py world:=h1 slam:=False use_robot_state_pub:=True
+ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
+    world:=h1 \
+    slam:=False \
+    use_robot_state_pub:=True \
+    use_composition:=False \
+    use_rviz:=True

@@ -12,6 +12,7 @@
 namespace autopilot {
 struct StateData {
   double gimbal_faceing[3];
+  bool autopilot_enabled;
 };
 struct PilotData {
   double chassis_vel[3]; // x, y, w

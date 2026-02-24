@@ -2,8 +2,7 @@
 #include <geometry_msgs/msg/detail/twist__struct.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/detail/u_int16__struct.hpp>
-#include <std_msgs/msg/u_int16.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <string>
 
 #include "communication.hpp"
@@ -31,8 +30,8 @@ public:
     this->get_parameter("state_data_receiving_port",
                         state_data_receiving_port_);
 
-    state_data_publisher_ =
-        this->create_publisher<std_msgs::msg::UInt16>("state_data_dbg", 10);
+    gicp_control_publisher_ = this->create_publisher<std_msgs::msg::Bool>(
+        "small_gicp/reset_when_err", 10);
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
         this->get_parameter("cmd_vel_topic").as_string(), 10,
         std::bind(&AutopilotServer::cmd_vel_callback, this,
@@ -50,17 +49,16 @@ public:
 
 private:
   void state_data_callback(const StateData &data) {
-    // TODO: change to real state data.
-    auto msg = std_msgs::msg::UInt16();
-    msg.data = data.gimbal_faceing[0];
-    state_data_publisher_->publish(msg);
+    auto msg = std_msgs::msg::Bool();
+    msg.data = !data.autopilot_enabled;
+    gicp_control_publisher_->publish(msg);
   }
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist msg) {
     PilotData pilot_data;
     pilot_data.chassis_vel[0] = msg.linear.x;
     pilot_data.chassis_vel[1] = msg.linear.y;
-    pilot_data.chassis_vel[2] = 0.0;
+    pilot_data.chassis_vel[2] = 4.0;
     if (!communication_.sendPilotData(pilot_data, pilot_data_sending_host_,
                                       pilot_data_sending_port_)) {
       RCLCPP_ERROR(this->get_logger(),
@@ -69,7 +67,7 @@ private:
     }
   }
 
-  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr state_data_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gicp_control_publisher_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
   std::string pilot_data_sending_host_;
