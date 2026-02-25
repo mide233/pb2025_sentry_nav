@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(autopilot_server)
+project(decision_maker)
 
 ## Use C++20
 set(CMAKE_CXX_STANDARD 20)
@@ -32,7 +32,7 @@ include_directories(
 )
 
 rclcpp_components_register_node(${PROJECT_NAME}
-  PLUGIN autopilot::AutopilotServer
+  PLUGIN decision::DecisionMaker
   EXECUTABLE ${PROJECT_NAME}_node
 )
 
@@ -52,14 +52,11 @@ endif()
 ## Install ##
 #############
 
-ament_environment_hooks("${CMAKE_CURRENT_SOURCE_DIR}/env-hooks/gazebo.dsv.in")
-
 ament_auto_package(
   USE_SCOPED_HEADER_INSTALL_DIR
   INSTALL_TO_SHARE
   launch
   config
-  resource
-  rviz
+  trees
 
 )

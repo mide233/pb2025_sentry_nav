@@ -1,0 +1,7 @@
+<root BTCPP_format="4">
+    <TreeNodesModel>
+        <Action ID="Test">
+            <input_port name="msg" type="std::string">dbg msg</input_port>
+        </Action>
+    </TreeNodesModel>
+</root>
