@@ -25,3 +25,6 @@
 [submodule "src/rmoss_gz_resources"]
 	path = src/rmoss_gz_resources
 	url = https://github.com/JinGangRobo/rmoss_gz_resources
+[submodule "src/BehaviorTree.CPP"]
+	path = src/BehaviorTree.CPP
+	url = https://github.com/JinGangRobo/BehaviorTree.CPP
