@@ -14,6 +14,9 @@
 
 #include "loam_interface/loam_interface.hpp"
 
+#include <pcl/filters/passthrough.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include "pcl_ros/transforms.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
@@ -28,12 +31,14 @@ LoamInterfaceNode::LoamInterfaceNode(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::string>("odom_frame", "odom");
   this->declare_parameter<std::string>("base_frame", "");
   this->declare_parameter<std::string>("lidar_frame", "");
+  this->declare_parameter<double>("pointcloud_height_threshold", 1.0);
 
   this->get_parameter("state_estimation_topic", state_estimation_topic_);
   this->get_parameter("registered_scan_topic", registered_scan_topic_);
   this->get_parameter("odom_frame", odom_frame_);
   this->get_parameter("base_frame", base_frame_);
   this->get_parameter("lidar_frame", lidar_frame_);
+  this->get_parameter("pointcloud_height_threshold", pointcloud_height_threshold_);
 
   base_frame_to_lidar_initialized_ = false;
 
@@ -57,7 +62,24 @@ void LoamInterfaceNode::pointCloudCallback(const sensor_msgs::msg::PointCloud2::
   // Here we transform it to the REAL `odom` frame
   auto out = std::make_shared<sensor_msgs::msg::PointCloud2>();
   pcl_ros::transformPointCloud(odom_frame_, tf_odom_to_lidar_odom_, *msg, *out);
-  pcd_pub_->publish(*out);
+
+  // Filter points by height using PassThrough filter
+  pcl::PCLPointCloud2::Ptr cloud(new pcl::PCLPointCloud2);
+  pcl::PCLPointCloud2::Ptr cloud_filtered(new pcl::PCLPointCloud2);
+
+  pcl_conversions::toPCL(*out, *cloud);
+
+  pcl::PassThrough<pcl::PCLPointCloud2> pass;
+  pass.setInputCloud(cloud);
+  pass.setFilterFieldName("z");
+  pass.setFilterLimits(-std::numeric_limits<double>::infinity(), pointcloud_height_threshold_);
+  pass.filter(*cloud_filtered);
+
+  auto filtered_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
+  pcl_conversions::fromPCL(*cloud_filtered, *filtered_msg);
+  filtered_msg->header = out->header;
+
+  pcd_pub_->publish(*filtered_msg);
 }
 
 void LoamInterfaceNode::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr msg)

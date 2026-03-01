@@ -16,10 +16,10 @@ point_lio:
     prop_at_freq_of_imu: True
     check_satu: True
     init_map_size: 10
-    point_filter_num: 3                                 # Options: 4, 3
+    point_filter_num: 4                                 # Options: 4, 3
     space_down_sample: True
-    filter_size_surf: 0.1                               # Options: 0.5, 0.3, 0.2, 0.15, 0.1
-    filter_size_map: 0.1                                # Options: 0.5, 0.3, 0.15, 0.1
+    filter_size_surf: 0.3                               # Options: 0.5, 0.3, 0.2, 0.15, 0.1
+    filter_size_map: 0.3                                # Options: 0.5, 0.3, 0.15, 0.1
     ivox_nearby_type: 18                                # Options: 0, 6, 18, 26
     runtime_pos_log_enable: False                       # Option: True
 
@@ -93,6 +93,7 @@ loam_interface:
     odom_frame: "odom"
     base_frame: "base_footprint"
     lidar_frame: "front_mid360"
+    pointcloud_height_threshold: 0.6 # 防止有乱七八糟的其他点云干扰重定位
 
 sensor_scan_generation:
   ros__parameters:
@@ -165,10 +166,10 @@ small_gicp_relocalization:
   ros__parameters:
     use_sim_time: False
     num_threads: 4
-    num_neighbors: 20
+    num_neighbors: 30
     global_leaf_size: 0.1
-    registered_leaf_size: 0.05
-    max_dist_sq: 3.0
+    registered_leaf_size: 0.08
+    max_dist_sq: 5.0
     map_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
@@ -223,7 +224,7 @@ slam_toolbox:
     scan_queue_size: 10
     transform_publish_period: 0.0                # if 0 never publishes odometry
     map_update_interval: 0.5
-    resolution: 0.01
+    resolution: 0.05
     min_laser_range: 0.3                         # for rastering images
     max_laser_range: 10.0                         # for rastering images
     minimum_time_interval: 0.2
@@ -371,8 +372,8 @@ controller_server:
       use_rotate_to_heading_treshold: 0.1
       min_approach_linear_velocity: 0.5
       approach_velocity_scaling_dist: 1.0
-      v_linear_min: -1.0
-      v_linear_max: 1.0
+      v_linear_min: -2.0
+      v_linear_max: 2.0
       v_angular_min: -3.0
       v_angular_max: 3.0
       curvature_min: 0.4                                # 低曲率阈值，低于此值不减速。
@@ -393,7 +394,7 @@ local_costmap:
       rolling_window: true
       width: 5
       height: 5
-      resolution: 0.01
+      resolution: 0.05
       robot_radius: 0.28
       plugins: ["static_layer", "intensity_voxel_layer", "inflation_layer"]
       intensity_voxel_layer:
@@ -441,7 +442,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: gimbal_yaw_fake
       robot_radius: 0.28
-      resolution: 0.01
+      resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "intensity_voxel_layer", "inflation_layer"]
       intensity_voxel_layer:
