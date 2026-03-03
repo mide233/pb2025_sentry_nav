@@ -58,7 +58,7 @@ private:
     PilotData pilot_data;
     pilot_data.chassis_vel[0] = msg.linear.x;
     pilot_data.chassis_vel[1] = msg.linear.y;
-    pilot_data.chassis_vel[2] = 4.0;
+    pilot_data.chassis_vel[2] = 2.0;
     if (!communication_.sendPilotData(pilot_data, pilot_data_sending_host_,
                                       pilot_data_sending_port_)) {
       RCLCPP_ERROR(this->get_logger(),

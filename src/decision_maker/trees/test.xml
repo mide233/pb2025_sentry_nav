@@ -2,16 +2,21 @@
 <root BTCPP_format="4">
   <BehaviorTree ID="Untitled">
     <Sequence>
-      <Test msg="hello !"/>
+      <Repeat num_cycles="3">
+        <Test msg="hello !"/>
+      </Repeat>
+      <NavToPose goal="2.4,0.4,0.0,0.0,0.0,0.0,0.0"/>
       <AlwaysSuccess/>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
+    <Action ID="NavToPose">
+      <input_port name="goal" type="geometry_msgs::msg::PoseStamped_&lt;std::allocator&lt;void&gt; &gt;">goal send to navigator.</input_port>
+    </Action>
     <Action ID="Test">
-      <input_port name="msg"
-                  type="std::string">dbg msg</input_port>
+      <input_port name="msg" type="std::string">dbg msg</input_port>
     </Action>
   </TreeNodesModel>
 

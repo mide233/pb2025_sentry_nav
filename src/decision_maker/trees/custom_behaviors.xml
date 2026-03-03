@@ -1,5 +1,8 @@
 <root BTCPP_format="4">
     <TreeNodesModel>
+        <Action ID="NavToPose">
+            <input_port name="goal" type="geometry_msgs::msg::PoseStamped_&lt;std::allocator&lt;void&gt; &gt;">goal send to navigator.</input_port>
+        </Action>
         <Action ID="Test">
             <input_port name="msg" type="std::string">dbg msg</input_port>
         </Action>

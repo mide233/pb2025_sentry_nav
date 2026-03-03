@@ -195,6 +195,17 @@ def generate_launch_description():
                     "container_name": "nav2_container",
                 }.items(),
             ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(
+                        get_package_share_directory("decision_maker"),
+                        "launch",
+                        "decision_maker_launch.py",
+                    )
+                ),
+                condition=IfCondition(PythonExpression(["not ", slam])),
+                launch_arguments={}.items(),
+            ),
         ]
     )
 
