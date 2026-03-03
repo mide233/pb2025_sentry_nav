@@ -1,0 +1,9 @@
+std_msgs/Header header
+uint16 current_hp
+uint8 game_state
+uint8 state_remain_time
+uint8 rfid_state
+uint8 center_area_state
+uint16 projectile_allowance
+bool auto_aim_tracking
+uint8[3] estimated_target_position
