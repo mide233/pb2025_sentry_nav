@@ -82,8 +82,8 @@ private:
     pilot_data.chassis_vel[1] = msg.linear.y;
     pilot_data.chassis_vel[2] = 2.0;
 
-    rclcpp::Time spin_cmd_stamp(last_cmd_spin_msg_->header.stamp);
     if (last_cmd_spin_msg_) {
+      rclcpp::Time spin_cmd_stamp(last_cmd_spin_msg_->header.stamp);
       if ((this->get_clock()->now() - spin_cmd_stamp).seconds() < 1) {
         pilot_data.chassis_vel[2] = last_cmd_spin_msg_->vel;
       }
