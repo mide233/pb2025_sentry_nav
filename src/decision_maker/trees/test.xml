@@ -14,9 +14,9 @@
         <NavToPose name="Back home"
                    goal="0.0,0.0,0.0,0.0,0.0,0.0,0.0"
                    _while="current_hp &lt;= 200"/>
-        <AlwaysSuccess _while="rfid_state==1 &amp;&amp; current_hp &lt; 250"/>
+        <AlwaysSuccess _while="rfid_state==1 &amp;&amp; current_hp &lt; 350"/>
         <NavToPose name="Go center area"
-                   goal="1.0,1.0,0.0,0.0,0.0,0.0,0.0"
+                   goal="4.9,-3.8,0.0,0.0,0.0,0.0,0.0"
                    _while="current_hp &gt; 200"/>
         <Test val="0"
               msg="I can be reached"/>
