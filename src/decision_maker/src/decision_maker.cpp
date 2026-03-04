@@ -3,10 +3,13 @@
 #include "behaviortree_cpp/xml_parsing.h"
 #include "custom_behaviors/blackboard_manager.hpp"
 #include "custom_behaviors/nav_to_pose.hpp"
+#include "custom_behaviors/set_spin.hpp"
 #include "custom_behaviors/test.hpp"
+#include "custom_types.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <autopilot_interfaces/msg/detail/state__struct.hpp>
 #include <autopilot_interfaces/msg/state.hpp>
+#include <autopilot_interfaces/msg/vel_stamped.hpp>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -14,6 +17,7 @@
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/node_options.hpp>
+#include <rclcpp/publisher.hpp>
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/utilities.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -57,10 +61,15 @@ public:
             [&](const autopilot_interfaces::msg::State::SharedPtr msg) {
               decision::BlackboardManager::updateStateData(msg);
             });
+    spin_cmd_publisher_ =
+        this->create_publisher<autopilot_interfaces::msg::VelStamped>(
+            "autopilot/decision/spin", 10);
 
     tree_factory_.registerNodeType<decision::Test>("Test");
     tree_factory_.registerNodeType<decision::NavToPose>(
         "NavToPose", nav_action_client_, node_logger_, nav_send_goal_timeout_);
+    tree_factory_.registerNodeType<decision::SetSpin>("SetSpin",
+                                                      spin_cmd_publisher_);
     tree_factory_.registerNodeType<decision::BlackboardManager>(
         "BlackboardManager");
     save_custom_behaviors(tree_factory_, custom_behaviors_save_path);
@@ -87,6 +96,8 @@ private:
   rclcpp_action::Client<NavigateToPose>::SharedPtr nav_action_client_;
   rclcpp::Subscription<autopilot_interfaces::msg::State>::SharedPtr
       state_subscription_;
+  rclcpp::Publisher<autopilot_interfaces::msg::VelStamped>::SharedPtr
+      spin_cmd_publisher_;
   std::shared_ptr<rclcpp::Logger> node_logger_;
 
   int nav_send_goal_timeout_;

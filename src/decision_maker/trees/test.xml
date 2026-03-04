@@ -9,11 +9,9 @@
                          state_remain_time="{state_remain_time}"
                          game_state="{game_state}"
                          current_hp="{current_hp}"/>
-      <Repeat num_cycles="3">
-        <Test val="{current_hp}"
-              msg=""/>
-      </Repeat>
+      <SetSpin spin_vel="0.1"/>
       <AlwaysSuccess/>
+      <NavToPose goal="1.0,1.0,0.0,0.0,0.0,0.0,0.0"/>
     </Sequence>
   </BehaviorTree>
 
@@ -35,11 +33,13 @@
       <output_port name="current_hp"
                    type="unsigned short"/>
     </Action>
-    <Action ID="Test">
-      <input_port name="val"
-                  type="unsigned short">dbg val</input_port>
-      <input_port name="msg"
-                  type="std::string">dbg msg</input_port>
+    <Action ID="NavToPose">
+      <input_port name="goal"
+                  type="geometry_msgs::msg::PoseStamped_&lt;std::allocator&lt;void&gt; &gt;">goal send to navigator.</input_port>
+    </Action>
+    <Action ID="SetSpin">
+      <input_port name="spin_vel"
+                  type="BT::AnyTypeAllowed">chassis spin velocity</input_port>
     </Action>
   </TreeNodesModel>
 

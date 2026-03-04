@@ -12,6 +12,9 @@
         <Action ID="NavToPose">
             <input_port name="goal" type="geometry_msgs::msg::PoseStamped_&lt;std::allocator&lt;void&gt; &gt;">goal send to navigator.</input_port>
         </Action>
+        <Action ID="SetSpin">
+            <input_port name="spin_vel" type="BT::AnyTypeAllowed">chassis spin velocity</input_port>
+        </Action>
         <Action ID="Test">
             <input_port name="val" type="unsigned short">dbg val</input_port>
             <input_port name="msg" type="std::string">dbg msg</input_port>

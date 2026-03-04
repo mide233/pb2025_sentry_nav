@@ -1,4 +1,6 @@
+#include <autopilot_interfaces/msg/detail/vel_stamped__struct.hpp>
 #include <autopilot_interfaces/msg/state.hpp>
+#include <autopilot_interfaces/msg/vel_stamped.hpp>
 #include <functional>
 #include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/logging.hpp>
@@ -39,6 +41,12 @@ public:
         this->get_parameter("cmd_vel_topic").as_string(), 10,
         std::bind(&AutopilotServer::cmd_vel_callback, this,
                   std::placeholders::_1));
+    cmd_spin_sub_ =
+        this->create_subscription<autopilot_interfaces::msg::VelStamped>(
+            "autopilot/decision/spin", 10,
+            [this](const autopilot_interfaces::msg::VelStamped::SharedPtr msg) {
+              last_cmd_spin_msg_ = msg;
+            });
 
     if (!communication_.startReceiving(
             state_data_receiving_host_, state_data_receiving_port_,
@@ -73,6 +81,14 @@ private:
     pilot_data.chassis_vel[0] = msg.linear.x;
     pilot_data.chassis_vel[1] = msg.linear.y;
     pilot_data.chassis_vel[2] = 2.0;
+
+    rclcpp::Time spin_cmd_stamp(last_cmd_spin_msg_->header.stamp);
+    if (last_cmd_spin_msg_) {
+      if ((this->get_clock()->now() - spin_cmd_stamp).seconds() < 1) {
+        pilot_data.chassis_vel[2] = last_cmd_spin_msg_->vel;
+      }
+    }
+
     if (!communication_.sendPilotData(pilot_data, pilot_data_sending_host_,
                                       pilot_data_sending_port_)) {
       RCLCPP_ERROR(this->get_logger(),
@@ -85,6 +101,10 @@ private:
   rclcpp::Publisher<autopilot_interfaces::msg::State>::SharedPtr
       state_publisher_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+  rclcpp::Subscription<autopilot_interfaces::msg::VelStamped>::SharedPtr
+      cmd_spin_sub_;
+
+  autopilot_interfaces::msg::VelStamped::SharedPtr last_cmd_spin_msg_;
 
   std::string pilot_data_sending_host_;
   int pilot_data_sending_port_;
