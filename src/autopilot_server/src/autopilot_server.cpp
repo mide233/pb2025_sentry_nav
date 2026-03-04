@@ -1,6 +1,7 @@
+#include <autopilot_interfaces/msg/state.hpp>
 #include <functional>
-#include <geometry_msgs/msg/detail/twist__struct.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <string>
@@ -32,6 +33,8 @@ public:
 
     gicp_control_publisher_ = this->create_publisher<std_msgs::msg::Bool>(
         "small_gicp/reset_when_err", 10);
+    state_publisher_ = this->create_publisher<autopilot_interfaces::msg::State>(
+        "autopilot/state", 10);
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
         this->get_parameter("cmd_vel_topic").as_string(), 10,
         std::bind(&AutopilotServer::cmd_vel_callback, this,
@@ -52,6 +55,17 @@ private:
     auto msg = std_msgs::msg::Bool();
     msg.data = !data.autopilot_enabled;
     gicp_control_publisher_->publish(msg);
+
+    auto state_msg = autopilot_interfaces::msg::State();
+    state_msg.header.stamp = this->get_clock()->now();
+    state_msg.current_hp = data.current_hp;
+    state_msg.game_state = data.game_state;
+    state_msg.state_remain_time = data.state_remain_time;
+    state_msg.rfid_state = data.rfid_state;
+    state_msg.center_area_state = data.center_area_state;
+    state_msg.projectile_allowance = data.projectile_allowance;
+    state_msg.auto_aim_tracking = data.auto_aim_tracking;
+    state_publisher_->publish(state_msg);
   }
 
   void cmd_vel_callback(const geometry_msgs::msg::Twist msg) {
@@ -68,6 +82,8 @@ private:
   }
 
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gicp_control_publisher_;
+  rclcpp::Publisher<autopilot_interfaces::msg::State>::SharedPtr
+      state_publisher_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
   std::string pilot_data_sending_host_;
