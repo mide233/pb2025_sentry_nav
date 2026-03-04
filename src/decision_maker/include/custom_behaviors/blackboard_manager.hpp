@@ -25,17 +25,12 @@ public:
       : SyncActionNode(name, config){};
   ~BlackboardManager() override = default;
   NodeStatus tick() override {
-    RCLCPP_INFO(rclcpp::get_logger("BT_BM"), "TICKED");
     if (state_data) {
       rclcpp::Clock ros_clock(
           RCL_ROS_TIME); // use the same time source of msg header stamp
       rclcpp::Time state_data_time(state_data->header.stamp);
 
       if ((ros_clock.now() - state_data_time).seconds() < 2) {
-        RCLCPP_INFO(rclcpp::get_logger("BT_BM"),
-                    "VALID STATE DATA WITH %d REMAIN TIME",
-                    state_data->state_remain_time);
-
         setOutput<uint16_t>("current_hp", state_data->current_hp);
         setOutput<uint8_t>("game_state", state_data->game_state);
         setOutput<uint16_t>("state_remain_time", state_data->state_remain_time);

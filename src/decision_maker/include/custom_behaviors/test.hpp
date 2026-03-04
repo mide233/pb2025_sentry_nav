@@ -19,7 +19,8 @@ public:
   ~Test() override = default;
 
   BT::NodeStatus tick() override {
-    RCLCPP_INFO(rclcpp::get_logger("Test Node"), "hello ! %d",
+    RCLCPP_INFO(rclcpp::get_logger("Test Node"), "hello ! %s %d",
+                getInput<std::string>("msg").value().c_str(),
                 getInput<uint16_t>("val").value());
     return BT::NodeStatus::SUCCESS;
   }
