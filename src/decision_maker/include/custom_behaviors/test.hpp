@@ -3,6 +3,7 @@
 #include "behaviortree_cpp/bt_factory.h"
 #include <behaviortree_cpp/action_node.h>
 #include <behaviortree_cpp/basic_types.h>
+#include <cstdint>
 #include <memory>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
@@ -18,12 +19,14 @@ public:
   ~Test() override = default;
 
   BT::NodeStatus tick() override {
-    RCLCPP_INFO(rclcpp::get_logger("Test Node"), "hello !");
+    RCLCPP_INFO(rclcpp::get_logger("Test Node"), "hello ! %d",
+                getInput<uint16_t>("val").value());
     return BT::NodeStatus::SUCCESS;
   }
 
   static BT::PortsList providedPorts() {
-    return {BT::InputPort<std::string>("msg", "dbg msg")};
+    return {BT::InputPort<std::string>("msg", "dbg msg"),
+            BT::InputPort<uint16_t>("val", "dbg val")};
   }
 
 private:

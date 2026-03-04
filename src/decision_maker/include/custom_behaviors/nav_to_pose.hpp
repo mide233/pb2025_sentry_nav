@@ -2,23 +2,17 @@
 
 #include "behaviortree_cpp/bt_factory.h"
 
-#include <memory>
-#include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/clock.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 
 #include <action_msgs/msg/goal_status_array.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
-
-#include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <std_msgs/msg/bool.hpp>
-#include <std_msgs/msg/float32.hpp>
 
-#include "custom_types.hpp"
-#include "rclcpp_action/rclcpp_action.hpp"
+#include <chrono>
+#include <limits>
+#include <memory>
 
 using namespace BT;
 using NavigateToPose = nav2_msgs::action::NavigateToPose;

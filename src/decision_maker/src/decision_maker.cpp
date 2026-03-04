@@ -1,24 +1,28 @@
 #include "behaviortree_cpp/bt_factory.h"
 #include "behaviortree_cpp/loggers/groot2_publisher.h"
 #include "behaviortree_cpp/xml_parsing.h"
+#include "custom_behaviors/blackboard_manager.hpp"
 #include "custom_behaviors/nav_to_pose.hpp"
 #include "custom_behaviors/test.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <chrono>
+#include <autopilot_interfaces/msg/detail/state__struct.hpp>
+#include <autopilot_interfaces/msg/state.hpp>
 #include <filesystem>
 #include <fstream>
 #include <memory>
-#include <ostream>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/node_options.hpp>
+#include <rclcpp/subscription.hpp>
 #include <rclcpp/utilities.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <string>
-#include <thread>
 
 namespace decision {
+std::shared_ptr<autopilot_interfaces::msg::State>
+    BlackboardManager::state_data = nullptr;
+
 class DecisionMaker : public rclcpp::Node {
 public:
   explicit DecisionMaker(
@@ -47,10 +51,18 @@ public:
     node_logger_ = std::make_shared<rclcpp::Logger>(this->get_logger());
     nav_action_client_ =
         rclcpp_action::create_client<NavigateToPose>(this, "navigate_to_pose");
+    state_subscription_ =
+        this->create_subscription<autopilot_interfaces::msg::State>(
+            "autopilot/state", 10,
+            [&](const autopilot_interfaces::msg::State::SharedPtr msg) {
+              decision::BlackboardManager::updateStateData(msg);
+            });
 
     tree_factory_.registerNodeType<decision::Test>("Test");
     tree_factory_.registerNodeType<decision::NavToPose>(
         "NavToPose", nav_action_client_, node_logger_, nav_send_goal_timeout_);
+    tree_factory_.registerNodeType<decision::BlackboardManager>(
+        "BlackboardManager");
     save_custom_behaviors(tree_factory_, custom_behaviors_save_path);
 
     tree_ = tree_factory_.createTreeFromFile(tree_dir / load_tree_name);
@@ -73,6 +85,8 @@ private:
   rclcpp::TimerBase::SharedPtr tree_tick_timer_;
 
   rclcpp_action::Client<NavigateToPose>::SharedPtr nav_action_client_;
+  rclcpp::Subscription<autopilot_interfaces::msg::State>::SharedPtr
+      state_subscription_;
   std::shared_ptr<rclcpp::Logger> node_logger_;
 
   int nav_send_goal_timeout_;
