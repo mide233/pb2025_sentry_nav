@@ -4,26 +4,17 @@
     <ReactiveSequence>
       <BlackboardManager auto_aim_tracking="{auto_aim_tracking}"
                          projectile_allowance="{projectile_allowance}"
-                         target_position=""
+                         target_position="{target_position}"
                          center_area_state="{center_area_state}"
                          rfid_state="{rfid_state}"
                          state_remain_time="{state_remain_time}"
                          game_state="{game_state}"
                          current_hp="{current_hp}"/>
-      <ReactiveFallback name="Play the GAME"
-                        _while="game_state==4">
-        <NavToPose name="Back home"
-                   goal="0.0,0.0,0.0,0.0,0.0,0.0,0.0"
-                   _while="current_hp &lt;= 200"/>
-        <AlwaysSuccess _while="rfid_state==1 &amp;&amp; current_hp &lt; 350"/>
-        <NavToPose name="Go center area"
-                   goal="4.9,-3.8,0.0,0.0,0.0,0.0,0.0"
-                   _while="current_hp &gt; 200"/>
-        <Test val="0"
-              msg="I can be reached"/>
-      </ReactiveFallback>
-      <SetSpin spin_vel="0.0"
-               _while="game_state!=4"/>
+      <Sequence>
+        <FindEnemy nav_goal="{enemy_goal}"
+                   target_position="{target_position}"/>
+        <NavToPose goal="{enemy_goal}"/>
+      </Sequence>
     </ReactiveSequence>
   </BehaviorTree>
 
@@ -47,19 +38,15 @@
       <output_port name="current_hp"
                    type="unsigned short"/>
     </Action>
+    <Action ID="FindEnemy">
+      <output_port name="nav_goal"
+                   type="std::string">xyzabcw goal in odom frame</output_port>
+      <input_port name="target_position"
+                  type="std::string">xy target posi in base frame</input_port>
+    </Action>
     <Action ID="NavToPose">
       <input_port name="goal"
                   type="geometry_msgs::msg::PoseStamped_&lt;std::allocator&lt;void&gt; &gt;">goal send to navigator.</input_port>
-    </Action>
-    <Action ID="SetSpin">
-      <input_port name="spin_vel"
-                  type="BT::AnyTypeAllowed">chassis spin velocity</input_port>
-    </Action>
-    <Action ID="Test">
-      <input_port name="val"
-                  type="unsigned short">dbg val</input_port>
-      <input_port name="msg"
-                  type="std::string">dbg msg</input_port>
     </Action>
   </TreeNodesModel>
 

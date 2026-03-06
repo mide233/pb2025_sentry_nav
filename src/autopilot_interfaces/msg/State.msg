@@ -6,4 +6,4 @@ uint8 rfid_state
 uint8 center_area_state
 int64 projectile_allowance
 bool auto_aim_tracking
-uint8[3] estimated_target_position
+float32[3] target_position

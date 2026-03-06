@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "Usage: savemap <map_name>"
+    echo "Example: savemap my_map"
+    exit 1
+fi
+
+MAP_NAME=$1
+
+echo "Saving map as: $MAP_NAME"
+source /home/ws/.script/envinit.bash
+ros2 run nav2_map_server map_saver_cli -f $MAP_NAME
+mv /home/ws/$MAP_NAME.pgm /home/ws/$MAP_NAME.yaml /home/ws/src/pb2025_nav_bringup/map/reality

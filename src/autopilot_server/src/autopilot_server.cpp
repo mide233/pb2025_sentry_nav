@@ -73,6 +73,9 @@ private:
     state_msg.center_area_state = data.center_area_state;
     state_msg.projectile_allowance = data.projectile_allowance;
     state_msg.auto_aim_tracking = data.auto_aim_tracking;
+    state_msg.target_position[0] = data.target_position[0];
+    state_msg.target_position[1] = data.target_position[1];
+    state_msg.target_position[2] = data.target_position[2];
     state_publisher_->publish(state_msg);
   }
 

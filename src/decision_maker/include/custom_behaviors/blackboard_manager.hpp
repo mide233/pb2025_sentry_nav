@@ -12,7 +12,9 @@
 #include <rclcpp/time.hpp>
 
 #include <cstdint>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <string>
 
 using namespace BT;
@@ -21,16 +23,15 @@ class BlackboardManager : public SyncActionNode {
 public:
   static std::shared_ptr<autopilot_interfaces::msg::State> state_data;
 
-  BlackboardManager(const std::string &name, const NodeConfig &config)
-      : SyncActionNode(name, config){};
+  BlackboardManager(const std::string &name, const NodeConfig &config,
+                    std::shared_ptr<rclcpp::Clock> node_clock)
+      : SyncActionNode(name, config), node_clock_(node_clock){};
   ~BlackboardManager() override = default;
   NodeStatus tick() override {
     if (state_data) {
-      rclcpp::Clock ros_clock(
-          RCL_ROS_TIME); // use the same time source of msg header stamp
       rclcpp::Time state_data_time(state_data->header.stamp);
 
-      if ((ros_clock.now() - state_data_time).seconds() < 2) {
+      if ((node_clock_->now() - state_data_time).seconds() < 2) {
         setOutput<uint16_t>("current_hp", state_data->current_hp);
         setOutput<uint8_t>("game_state", state_data->game_state);
         setOutput<uint16_t>("state_remain_time", state_data->state_remain_time);
@@ -39,6 +40,17 @@ public:
         setOutput<int64_t>("projectile_allowance",
                            state_data->projectile_allowance);
         setOutput<bool>("auto_aim_tracking", state_data->auto_aim_tracking);
+
+        std::stringstream target_position_stringstream;
+        if (state_data->auto_aim_tracking)
+          target_position_stringstream << std::fixed << std::setprecision(1)
+                                       << state_data->target_position[0] << ","
+                                       << state_data->target_position[1];
+        else
+          target_position_stringstream << "";
+
+        setOutput<std::string>("target_position",
+                               target_position_stringstream.str());
       } else {
         resetAllPorts();
       }
@@ -55,7 +67,8 @@ public:
             OutputPort<uint8_t>("rfid_state"),
             OutputPort<uint8_t>("center_area_state"),
             OutputPort<int64_t>("projectile_allowance"),
-            OutputPort<bool>("auto_aim_tracking")};
+            OutputPort<bool>("auto_aim_tracking"),
+            OutputPort<std::string>("target_position")};
   };
 
   static void
@@ -72,6 +85,9 @@ private:
     setOutput<uint8_t>("center_area_state", 0);
     setOutput<int64_t>("projectile_allowance", 0);
     setOutput<bool>("auto_aim_tracking", false);
+    setOutput<std::string>("target_position", "");
   }
+
+  std::shared_ptr<rclcpp::Clock> node_clock_;
 };
 } // namespace decision

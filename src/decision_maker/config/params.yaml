@@ -2,3 +2,6 @@ decision_maker:
   ros__parameters:
     load_tree: test.xml
     custom_behaviors_export_path: /home/ws/src/decision_maker/trees/custom_behaviors.xml
+    base_frame: base_footprint
+    odom_frame: odom
+    desired_enemy_distance_threshold: 1.2
