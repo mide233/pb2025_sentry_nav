@@ -128,7 +128,7 @@ private:
   BT::Tree tree_;
   BT::BehaviorTreeFactory tree_factory_;
 
-  int desired_enemy_distance_threshold_;
+  double desired_enemy_distance_threshold_;
   std::string odom_frame_;
   std::string base_frame_;
 
