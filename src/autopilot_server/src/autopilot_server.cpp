@@ -1,6 +1,7 @@
 #include <autopilot_interfaces/msg/detail/vel_stamped__struct.hpp>
 #include <autopilot_interfaces/msg/state.hpp>
 #include <autopilot_interfaces/msg/vel_stamped.hpp>
+#include <diagnostic_msgs/msg/detail/diagnostic_array__struct.hpp>
 #include <functional>
 #include <geometry_msgs/msg/twist.hpp>
 #include <rclcpp/logging.hpp>
@@ -9,13 +10,14 @@
 #include <string>
 
 #include "communication.hpp"
+#include "diagnosis.hpp"
 
 namespace autopilot {
 class AutopilotServer : public rclcpp::Node {
 public:
   explicit AutopilotServer(
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-      : Node("autopilot_server", options) {
+      : Node("autopilot_server", options), diagnosis_() {
     RCLCPP_INFO(this->get_logger(), "Autopilot Server node has been started.");
 
     this->declare_parameter<std::string>("pilot_data_sending_host",
@@ -46,6 +48,12 @@ public:
             "autopilot/decision/spin", 10,
             [this](const autopilot_interfaces::msg::VelStamped::SharedPtr msg) {
               last_cmd_spin_msg_ = msg;
+            });
+    diagnostic_sub_ =
+        this->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
+            "/diagnostics_agg", 10,
+            [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {
+              diagnosis_.update_health_callback(msg);
             });
 
     if (!communication_.startReceiving(
@@ -100,12 +108,19 @@ private:
     }
   }
 
+  void diagnostic_callback(
+      const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {}
+
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gicp_control_publisher_;
   rclcpp::Publisher<autopilot_interfaces::msg::State>::SharedPtr
       state_publisher_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Subscription<autopilot_interfaces::msg::VelStamped>::SharedPtr
       cmd_spin_sub_;
+  rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr
+      diagnostic_sub_;
+
+  diagnosis::Diagnosis diagnosis_;
 
   autopilot_interfaces::msg::VelStamped::SharedPtr last_cmd_spin_msg_;
 
