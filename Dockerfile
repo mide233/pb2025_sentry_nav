@@ -42,10 +42,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 50
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3-pip curl wget htop vim unzip && \
+    apt-get install -y --no-install-recommends python3-pip curl wget htop vim unzip screen tini netcat && \
     pip install xmacro gdown
 
-RUN apt install -y ros-$ROS_DISTRO-foxglove-bridge
+RUN apt install -y \
+    ros-$ROS_DISTRO-foxglove-bridge 
 
 # Install small_gicp
 RUN apt install -y libeigen3-dev libomp-dev && \
@@ -65,11 +66,19 @@ RUN echo 'alias wsi="source /opt/ros/humble/setup.bash"' >> /home/$USERNAME/.bas
 RUN echo 'alias ini="source install/setup.bash"' >> /home/$USERNAME/.bashrc
 
 USER $USERNAME
-
+RUN sudo mkdir /home/ws && sudo chown $USERNAME:$USERNAME /home/ws
 RUN export ROSDISTRO_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/rosdistro/index-v4.yaml && rosdep update || true
 
 RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \
-    && rosdep install -r --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y || true
+    && sudo cp /home/ws/.script/nav-service /etc/init.d/nav || true \ 
+    && sudo cp /home/ws/.script/entrypoint /entrypoint.sh \
+    && sudo chown $USERNAME:$USERNAME /entrypoint.sh && sudo chmod +x /entrypoint.sh \
+    && sudo chown root:root /etc/init.d/nav \
+    && sudo chmod +x /etc/init.d/nav \
+    && sudo rosdep install --from-paths src --ignore-src -y --rosdistro humble \
+    && source /home/ws/.script/envinit.bash
+
+CMD ["/entrypoint.sh"]
 
 # if you need simulation pcd, uncomment the following lines
 # RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \

@@ -1,0 +1,35 @@
+services:
+  navatrm-develop:
+    image: nav-dev-loc:latest
+    restart: unless-stopped
+    user: "cvdoc"
+    privileged: true
+    volumes:
+      - /dev:/dev:bind
+      - /tmp/.X11-unix:/tmp/.X11-unix:bind
+      - /run/user/1000/wayland-0:/run/user/1000/wayland-0
+      - .:/home/ws:bind
+    environment:
+      - DISPLAY=:0
+    network_mode: host
+    tty: true
+    stdin_open: true 
+    
+    healthcheck:
+      test: ["CMD", "/home/ws/.script/health-check"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    labels:
+      - "autoheal=true"
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=2  
+      - AUTOHEAL_START_PERIOD=5
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
