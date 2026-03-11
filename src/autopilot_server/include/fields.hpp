@@ -10,7 +10,7 @@ enum class PilotDiag : uint8_t {
   READY,
   STARTING
 };
-enum class NavMode : uint8_t { SLAM, RELOCATION };
+enum class NavMode : uint8_t { SLAM, RELOCATION, UNKNOWN };
 struct StateData {
   double gimbal_faceing[3];
   bool autopilot_enabled;

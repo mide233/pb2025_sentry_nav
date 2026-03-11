@@ -6,6 +6,8 @@
 #include <diagnostic_msgs/msg/detail/diagnostic_array__struct.hpp>
 #include <diagnostic_msgs/msg/detail/diagnostic_status__struct.hpp>
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#include <filesystem>
+#include <fstream>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <sys/socket.h>
@@ -96,16 +98,65 @@ public:
     }
   }
 
-  void update_health(PilotDiag diag) { is_healthy_ = diag != PilotDiag::FATAL; }
+  void required_restart(bool required) { is_healthy_ = !required; }
 
-  bool set_nav_mode() {
+  bool set_nav_mode(NavMode desired_mode) {
     // True for no work to do, false for restart required.
-    return true; // TODO: Implement nav mode file writing and checking logic.
+    if (current_nav_mode_ == NavMode::UNKNOWN) {
+      if (std::filesystem::exists(nav_mode_path_)) {
+        std::ifstream infile(nav_mode_path_);
+        std::string mode_str;
+        infile >> mode_str;
+        infile.close();
+
+        if (mode_str == "SLAM") {
+          current_nav_mode_ = NavMode::SLAM;
+        } else if (mode_str == "LOCA") {
+          current_nav_mode_ = NavMode::RELOCATION;
+        } else {
+          RCLCPP_ERROR(rclcpp::get_logger("HC"), "Invalid nav mode in file: %s",
+                       mode_str.c_str());
+          return false;
+        }
+      } else {
+        current_nav_mode_ = NavMode::RELOCATION;
+        return write_nav_mode(current_nav_mode_);
+      }
+    }
+    if (desired_mode == NavMode::UNKNOWN) {
+      return true;
+    }
+
+    if (desired_mode == current_nav_mode_) {
+      return true;
+    } else {
+      return !write_nav_mode(desired_mode);
+    }
   }
 
 private:
+  bool write_nav_mode(const NavMode mode) {
+    if (std::filesystem::exists(nav_mode_path_)) {
+      std::filesystem::remove(nav_mode_path_);
+    }
+
+    std::ofstream outfile(nav_mode_path_);
+    if (outfile.is_open()) {
+      std::string mode_str = mode == NavMode::SLAM ? "SLAM" : "LOCA";
+      outfile << mode_str;
+      outfile.close();
+    } else {
+      RCLCPP_ERROR(rclcpp::get_logger("HC"),
+                   "Failed to write nav mode file: %s", nav_mode_path_.c_str());
+      return false;
+    }
+    return true;
+  }
+
   const std::string socket_path_ = "/tmp/health_check.sock";
   const std::string nav_mode_path_ = "/tmp/nav_mode";
+
+  NavMode current_nav_mode_ = NavMode::UNKNOWN;
 
   std::thread listener_thread_;
   std::atomic<bool> is_healthy_{true};

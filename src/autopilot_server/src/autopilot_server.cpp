@@ -15,6 +15,7 @@
 
 #include "communication.hpp"
 #include "diagnosis.hpp"
+#include "fields.hpp"
 
 namespace autopilot {
 class AutopilotServer : public rclcpp::Node {
@@ -71,7 +72,9 @@ public:
             [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {
               last_pilot_diag_ = diagnosis_->update_health_callback(
                   msg, is_pilot_enabled_by_client_);
-              diagnosis_->update_health(last_pilot_diag_);
+              diagnosis_->required_restart(
+                  last_pilot_diag_ == PilotDiag::FATAL ||
+                  !diagnosis_->set_nav_mode(desired_nav_mode_));
             });
 
     pilot_data_update_timer_ = this->create_wall_timer(
@@ -89,8 +92,10 @@ public:
 
 private:
   void state_data_callback(const StateData &data) {
-    auto msg = std_msgs::msg::Bool();
     is_pilot_enabled_by_client_ = data.autopilot_enabled;
+    desired_nav_mode_ = data.desired_nav_mode;
+
+    auto msg = std_msgs::msg::Bool();
     msg.data = !is_pilot_enabled_by_client_;
     gicp_control_publisher_->publish(msg);
 
@@ -161,6 +166,7 @@ private:
   autopilot_interfaces::msg::VelStamped::SharedPtr last_cmd_spin_msg_;
   rclcpp::TimerBase::SharedPtr pilot_data_update_timer_;
   bool is_pilot_enabled_by_client_ = false;
+  NavMode desired_nav_mode_ = NavMode::UNKNOWN;
 
   std::string pilot_data_sending_host_;
   int pilot_data_sending_port_;
