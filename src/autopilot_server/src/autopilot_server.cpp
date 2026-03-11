@@ -1,11 +1,15 @@
 #include <autopilot_interfaces/msg/detail/vel_stamped__struct.hpp>
 #include <autopilot_interfaces/msg/state.hpp>
 #include <autopilot_interfaces/msg/vel_stamped.hpp>
+#include <cstdint>
 #include <diagnostic_msgs/msg/detail/diagnostic_array__struct.hpp>
 #include <functional>
+#include <geometry_msgs/msg/detail/twist_stamped__struct.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <memory>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/timer.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <string>
 
@@ -17,7 +21,7 @@ class AutopilotServer : public rclcpp::Node {
 public:
   explicit AutopilotServer(
       const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-      : Node("autopilot_server", options), diagnosis_() {
+      : Node("autopilot_server", options) {
     RCLCPP_INFO(this->get_logger(), "Autopilot Server node has been started.");
 
     this->declare_parameter<std::string>("pilot_data_sending_host",
@@ -27,6 +31,8 @@ public:
                                          "127.0.0.1");
     this->declare_parameter<int>("state_data_receiving_port", 42332);
     this->declare_parameter<std::string>("cmd_vel_topic", "cmd_vel");
+    this->declare_parameter<int>("expected_diagnosis_reports", 3);
+    this->declare_parameter<int>("startup_time", 15);
 
     this->get_parameter("pilot_data_sending_host", pilot_data_sending_host_);
     this->get_parameter("pilot_data_sending_port", pilot_data_sending_port_);
@@ -34,6 +40,12 @@ public:
                         state_data_receiving_host_);
     this->get_parameter("state_data_receiving_port",
                         state_data_receiving_port_);
+    this->get_parameter("expected_diagnosis_reports",
+                        expected_diagnosis_reports_);
+    this->get_parameter("startup_time", startup_time_);
+
+    diagnosis_ =
+        std::make_unique<Diagnosis>(startup_time_, expected_diagnosis_reports_);
 
     gicp_control_publisher_ = this->create_publisher<std_msgs::msg::Bool>(
         "small_gicp/reset_when_err", 10);
@@ -41,8 +53,12 @@ public:
         "autopilot/state", 10);
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
         this->get_parameter("cmd_vel_topic").as_string(), 10,
-        std::bind(&AutopilotServer::cmd_vel_callback, this,
-                  std::placeholders::_1));
+        [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
+          geometry_msgs::msg::TwistStamped cmd_vel_stamped;
+          cmd_vel_stamped.header.stamp = this->get_clock()->now();
+          cmd_vel_stamped.twist = *msg;
+          *last_cmd_vel_msg_ = cmd_vel_stamped;
+        });
     cmd_spin_sub_ =
         this->create_subscription<autopilot_interfaces::msg::VelStamped>(
             "autopilot/decision/spin", 10,
@@ -53,8 +69,13 @@ public:
         this->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
             "/diagnostics_agg", 10,
             [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {
-              diagnosis_.update_health_callback(msg);
+              last_pilot_diag_ = diagnosis_->update_health_callback(
+                  msg, is_pilot_enabled_by_client_);
+              diagnosis_->update_health(last_pilot_diag_);
             });
+
+    pilot_data_update_timer_ = this->create_wall_timer(
+        std::chrono::milliseconds(20), [this]() { pilot_data_update(); });
 
     if (!communication_.startReceiving(
             state_data_receiving_host_, state_data_receiving_port_,
@@ -69,7 +90,8 @@ public:
 private:
   void state_data_callback(const StateData &data) {
     auto msg = std_msgs::msg::Bool();
-    msg.data = !data.autopilot_enabled;
+    is_pilot_enabled_by_client_ = data.autopilot_enabled;
+    msg.data = !is_pilot_enabled_by_client_;
     gicp_control_publisher_->publish(msg);
 
     auto state_msg = autopilot_interfaces::msg::State();
@@ -87,16 +109,29 @@ private:
     state_publisher_->publish(state_msg);
   }
 
-  void cmd_vel_callback(const geometry_msgs::msg::Twist msg) {
+  void pilot_data_update() {
     PilotData pilot_data;
-    pilot_data.chassis_vel[0] = msg.linear.x;
-    pilot_data.chassis_vel[1] = msg.linear.y;
-    pilot_data.chassis_vel[2] = 2.0;
+    pilot_data.chassis_vel[0] = 0.0;
+    pilot_data.chassis_vel[1] = 0.0;
+    pilot_data.chassis_vel[2] = 0.0;
+    pilot_data.pilot_valid = false;
 
+    pilot_data.pilot_state = last_pilot_diag_;
+
+    if (last_cmd_vel_msg_) {
+      rclcpp::Time cmd_vel_stamp(last_cmd_vel_msg_->header.stamp);
+      if ((this->get_clock()->now() - cmd_vel_stamp).seconds() < 0.5) {
+        pilot_data.chassis_vel[0] = last_cmd_vel_msg_->twist.linear.x;
+        pilot_data.chassis_vel[1] = last_cmd_vel_msg_->twist.linear.y;
+        pilot_data.chassis_vel[2] = 2.0;
+        pilot_data.pilot_valid = true;
+      }
+    }
     if (last_cmd_spin_msg_) {
       rclcpp::Time spin_cmd_stamp(last_cmd_spin_msg_->header.stamp);
       if ((this->get_clock()->now() - spin_cmd_stamp).seconds() < 1) {
         pilot_data.chassis_vel[2] = last_cmd_spin_msg_->vel;
+        pilot_data.pilot_valid = true;
       }
     }
 
@@ -120,14 +155,19 @@ private:
   rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr
       diagnostic_sub_;
 
-  diagnosis::Diagnosis diagnosis_;
-
+  std::unique_ptr<Diagnosis> diagnosis_;
+  PilotDiag last_pilot_diag_;
+  geometry_msgs::msg::TwistStamped::SharedPtr last_cmd_vel_msg_;
   autopilot_interfaces::msg::VelStamped::SharedPtr last_cmd_spin_msg_;
+  rclcpp::TimerBase::SharedPtr pilot_data_update_timer_;
+  bool is_pilot_enabled_by_client_ = false;
 
   std::string pilot_data_sending_host_;
   int pilot_data_sending_port_;
   std::string state_data_receiving_host_;
   int state_data_receiving_port_;
+  uint16_t expected_diagnosis_reports_;
+  uint16_t startup_time_;
 
   Communication communication_;
 };

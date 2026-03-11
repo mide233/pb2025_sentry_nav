@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fields.hpp"
 #include <arpa/inet.h>
 #include <atomic>
 #include <cstring>
@@ -10,23 +11,6 @@
 #include <unistd.h>
 
 namespace autopilot {
-struct StateData {
-  double gimbal_faceing[3];
-  bool autopilot_enabled;
-
-  uint16_t current_hp;
-  uint8_t game_state;
-  uint16_t state_remain_time;
-  uint8_t rfid_state;
-  uint8_t center_area_state;
-  int64_t projectile_allowance;
-
-  bool auto_aim_tracking;
-  double target_position[3];
-};
-struct PilotData {
-  double chassis_vel[3]; // x, y, w
-};
 class Communication {
 public:
   Communication() : sockfd_(-1), running_(false) {}
