@@ -19,10 +19,16 @@ namespace autopilot {
 class Diagnosis {
 public:
   Diagnosis(const uint16_t startup_timeout_sec,
-            const uint16_t expected_reporters)
-      : expected_reporters_(expected_reporters) {
+            const uint16_t expected_slam_reporters,
+            const uint16_t expected_relocation_reporters)
+      : expected_slam_reporters_(expected_slam_reporters),
+        expected_relocation_reporters_(expected_relocation_reporters) {
     listener_thread_ = std::thread([this]() {
       int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+      if (sock < 0) {
+        return;
+      }
+
       struct sockaddr_un addr;
       addr.sun_family = AF_UNIX;
       strcpy(addr.sun_path, socket_path_.c_str());
@@ -34,17 +40,55 @@ public:
       }
       listen(sock, 5);
 
+      struct timeval tv;
+      tv.tv_sec = 1;
+      tv.tv_usec = 0;
+      setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
       while (running_) {
         int client = accept(sock, nullptr, nullptr);
-        uint8_t status = is_healthy_ ? 0 : 1;
-        if (write(client, &status, 1) < 0) {
-          // Handle write error if needed
+        if (client < 0) {
+          if (!running_)
+            break;
+          continue;
         }
+
+        uint8_t status = is_healthy_ ? 0 : 1;
+        ssize_t written = write(client, &status, 1);
+
+        if (written > 0) {
+          fsync(client);
+        }
+        usleep(10000); // 10ms
         close(client);
       }
+
+      close(sock);
+      unlink(addr.sun_path);
     });
     startup_time_ = std::chrono::steady_clock::now();
     timeout_ = std::chrono::seconds(startup_timeout_sec);
+
+    if (current_nav_mode_ == NavMode::UNKNOWN) {
+      if (std::filesystem::exists(nav_mode_path_)) {
+        std::ifstream infile(nav_mode_path_);
+        std::string mode_str;
+        infile >> mode_str;
+        infile.close();
+
+        if (mode_str == "SLAM") {
+          current_nav_mode_ = file_nav_mode_ = NavMode::SLAM;
+        } else if (mode_str == "LOCA") {
+          current_nav_mode_ = file_nav_mode_ = NavMode::RELOCATION;
+        } else {
+          RCLCPP_ERROR(rclcpp::get_logger("HC"), "Invalid nav mode in file: %s",
+                       mode_str.c_str());
+        }
+      } else {
+        current_nav_mode_ = file_nav_mode_ = NavMode::RELOCATION;
+        write_nav_mode(current_nav_mode_);
+      }
+    }
   };
 
   ~Diagnosis() {
@@ -64,6 +108,9 @@ public:
 
     if (std::chrono::steady_clock::now() - startup_time_ < timeout_) {
       return PilotDiag::STARTING;
+    }
+    if (current_nav_mode_ == NavMode::UNKNOWN) {
+      return fatal_diag;
     }
 
     for (const auto &status : msg->status) {
@@ -91,7 +138,9 @@ public:
                     warning.hardware_id.c_str(), warning.message.c_str());
       }
       return PilotDiag::WARNING;
-    } else if (expected_reporters_ != reporter_count) {
+    } else if ((current_nav_mode_ == NavMode::SLAM
+                    ? expected_slam_reporters_
+                    : expected_relocation_reporters_) != reporter_count) {
       return fatal_diag;
     } else {
       return PilotDiag::READY;
@@ -100,41 +149,32 @@ public:
 
   void required_restart(bool required) { is_healthy_ = !required; }
 
+  // True for no work to do, false for restart required.
   bool set_nav_mode(NavMode desired_mode) {
-    // True for no work to do, false for restart required.
     if (current_nav_mode_ == NavMode::UNKNOWN) {
-      if (std::filesystem::exists(nav_mode_path_)) {
-        std::ifstream infile(nav_mode_path_);
-        std::string mode_str;
-        infile >> mode_str;
-        infile.close();
-
-        if (mode_str == "SLAM") {
-          current_nav_mode_ = NavMode::SLAM;
-        } else if (mode_str == "LOCA") {
-          current_nav_mode_ = NavMode::RELOCATION;
-        } else {
-          RCLCPP_ERROR(rclcpp::get_logger("HC"), "Invalid nav mode in file: %s",
-                       mode_str.c_str());
-          return false;
-        }
-      } else {
-        current_nav_mode_ = NavMode::RELOCATION;
-        return write_nav_mode(current_nav_mode_);
-      }
+      return false;
     }
-    if (desired_mode == NavMode::UNKNOWN) {
+    if (desired_mode == NavMode::UNKNOWN &&
+        current_nav_mode_ == file_nav_mode_) {
       return true;
     }
-
+    if (current_nav_mode_ != file_nav_mode_) {
+      return false;
+    }
     if (desired_mode == current_nav_mode_) {
       return true;
-    } else {
-      return !write_nav_mode(desired_mode);
     }
+    if (write_nav_mode(desired_mode)) {
+      file_nav_mode_ = desired_mode;
+      return false;
+    }
+    return true;
   }
 
+  NavMode get_current_nav_mode() const { return current_nav_mode_; }
+
 private:
+  // True when successful, false on failure
   bool write_nav_mode(const NavMode mode) {
     if (std::filesystem::exists(nav_mode_path_)) {
       std::filesystem::remove(nav_mode_path_);
@@ -157,6 +197,7 @@ private:
   const std::string nav_mode_path_ = "/tmp/nav_mode";
 
   NavMode current_nav_mode_ = NavMode::UNKNOWN;
+  NavMode file_nav_mode_ = NavMode::UNKNOWN;
 
   std::thread listener_thread_;
   std::atomic<bool> is_healthy_{true};
@@ -164,6 +205,7 @@ private:
 
   std::chrono::duration<int64_t> timeout_{15};
   std::chrono::steady_clock::time_point startup_time_;
-  uint16_t expected_reporters_ = 4;
+  uint16_t expected_slam_reporters_ = 3;
+  uint16_t expected_relocation_reporters_ = 2;
 };
 } // namespace autopilot

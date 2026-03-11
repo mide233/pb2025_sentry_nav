@@ -1,3 +1,4 @@
 #!/bin/bash
 status=$(echo "" | nc -U /tmp/health_check.sock | od -An -tu1 | tr -d ' ')
+echo "Health check status: ${status}"
 exit ${status:-1}

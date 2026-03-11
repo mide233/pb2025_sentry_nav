@@ -8,7 +8,7 @@ start() {
         exit 1
     fi
 
-    sudo -u "cvdoc" bash -c "source /home/ws/.script/envinit.bash && screen -dmS nav bash -c '/home/ws/.script/start-loca'"
+    sudo -u "cvdoc" bash -c "source /home/ws/.script/envinit.bash && screen -dmS nav bash -c '/home/ws/.script/start'"
 
     sleep 0.1
     

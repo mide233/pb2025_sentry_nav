@@ -1,0 +1,39 @@
+#!/bin/bash
+source /home/ws/.script/envinit.bash
+
+NAV_MODE_FILE="/tmp/nav_mode"
+WORLD_NAME="aaa"
+
+if [ ! -f "$NAV_MODE_FILE" ]; then
+    ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
+            world:=$WORLD_NAME \
+            slam:=False \
+            use_robot_state_pub:=True \
+            use_composition:=False \
+            use_rviz:=False
+elif [ -f "$NAV_MODE_FILE" ]; then
+    MODE=$(cat "$NAV_MODE_FILE")
+    
+    if [ "$MODE" = "SLAM" ]; then
+        ros2 launch pb2025_nav_bringup \
+            rm_navigation_reality_launch.py \
+            slam:=True \
+            use_robot_state_pub:=True \
+            use_composition:=False \
+            use_rviz:=False
+    elif [ "$MODE" = "LOCA" ]; then
+        ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
+            world:=$WORLD_NAME \
+            slam:=False \
+            use_robot_state_pub:=True \
+            use_composition:=False \
+            use_rviz:=False
+    else
+        ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
+            world:=$WORLD_NAME \
+            slam:=False \
+            use_robot_state_pub:=True \
+            use_composition:=False \
+            use_rviz:=False
+    fi
+fi

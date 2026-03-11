@@ -31,5 +31,6 @@ struct PilotData {
   bool pilot_valid;
   double chassis_vel[3]; // x, y, w
   PilotDiag pilot_state;
+  NavMode current_nav_mode;
 };
 } // namespace autopilot

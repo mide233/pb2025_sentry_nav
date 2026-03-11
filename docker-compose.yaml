@@ -19,7 +19,7 @@ services:
       test: ["CMD", "/home/ws/.script/health-check"]
       interval: 2s
       timeout: 5s
-      retries: 5
+      retries: 2
       start_period: 5s
     labels:
       - "autoheal=true"
