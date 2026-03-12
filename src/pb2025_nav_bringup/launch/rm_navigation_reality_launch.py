@@ -194,10 +194,10 @@ def generate_launch_description():
         package="foxglove_bridge",
         executable="foxglove_bridge",
         name="foxglove_bridge",
-        output="screen",
         namespace=namespace,
         parameters=[configured_params],
         condition=IfCondition(use_foxglove),
+        arguments=["--ros-args", "--log-level", "FATAL"],
     )
 
     bringup_cmd = IncludeLaunchDescription(

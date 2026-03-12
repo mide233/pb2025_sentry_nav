@@ -53,6 +53,8 @@ public:
         startup_time_, expected_slam_diagnosis_reporters_,
         expected_relocation_diagnosis_reporters_);
 
+    last_cmd_vel_msg_ = std::make_shared<geometry_msgs::msg::TwistStamped>();
+
     gicp_control_publisher_ = this->create_publisher<std_msgs::msg::Bool>(
         "small_gicp/reset_when_err", 10);
     state_publisher_ = this->create_publisher<autopilot_interfaces::msg::State>(
@@ -60,10 +62,8 @@ public:
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
         this->get_parameter("cmd_vel_topic").as_string(), 10,
         [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
-          geometry_msgs::msg::TwistStamped cmd_vel_stamped;
-          cmd_vel_stamped.header.stamp = this->get_clock()->now();
-          cmd_vel_stamped.twist = *msg;
-          *last_cmd_vel_msg_ = cmd_vel_stamped;
+          last_cmd_vel_msg_->header.stamp = this->get_clock()->now();
+          last_cmd_vel_msg_->twist = *msg;
         });
     cmd_spin_sub_ =
         this->create_subscription<autopilot_interfaces::msg::VelStamped>(
