@@ -32,7 +32,9 @@ public:
                                          "127.0.0.1");
     this->declare_parameter<int>("state_data_receiving_port", 42332);
     this->declare_parameter<std::string>("cmd_vel_topic", "cmd_vel");
-    this->declare_parameter<int>("expected_diagnosis_reports", 3);
+    this->declare_parameter<int>("expected_slam_diagnosis_reporters", 2);
+    this->declare_parameter<int>("expected_relocation_diagnosis_reporters", 3);
+
     this->declare_parameter<int>("startup_time", 15);
 
     this->get_parameter("pilot_data_sending_host", pilot_data_sending_host_);
@@ -41,12 +43,15 @@ public:
                         state_data_receiving_host_);
     this->get_parameter("state_data_receiving_port",
                         state_data_receiving_port_);
-    this->get_parameter("expected_diagnosis_reports",
-                        expected_diagnosis_reports_);
+    this->get_parameter("expected_slam_diagnosis_reporters",
+                        expected_slam_diagnosis_reporters_);
+    this->get_parameter("expected_relocation_diagnosis_reporters",
+                        expected_relocation_diagnosis_reporters_);
     this->get_parameter("startup_time", startup_time_);
 
-    diagnosis_ =
-        std::make_unique<Diagnosis>(startup_time_, expected_diagnosis_reports_);
+    diagnosis_ = std::make_unique<Diagnosis>(
+        startup_time_, expected_slam_diagnosis_reporters_,
+        expected_relocation_diagnosis_reporters_);
 
     gicp_control_publisher_ = this->create_publisher<std_msgs::msg::Bool>(
         "small_gicp/reset_when_err", 10);
@@ -122,6 +127,7 @@ private:
     pilot_data.pilot_valid = false;
 
     pilot_data.pilot_state = last_pilot_diag_;
+    pilot_data.current_nav_mode = diagnosis_->get_current_nav_mode();
 
     if (last_cmd_vel_msg_) {
       rclcpp::Time cmd_vel_stamp(last_cmd_vel_msg_->header.stamp);
@@ -161,7 +167,7 @@ private:
       diagnostic_sub_;
 
   std::unique_ptr<Diagnosis> diagnosis_;
-  PilotDiag last_pilot_diag_;
+  PilotDiag last_pilot_diag_ = PilotDiag::STARTING;
   geometry_msgs::msg::TwistStamped::SharedPtr last_cmd_vel_msg_;
   autopilot_interfaces::msg::VelStamped::SharedPtr last_cmd_spin_msg_;
   rclcpp::TimerBase::SharedPtr pilot_data_update_timer_;
@@ -172,7 +178,8 @@ private:
   int pilot_data_sending_port_;
   std::string state_data_receiving_host_;
   int state_data_receiving_port_;
-  uint16_t expected_diagnosis_reports_;
+  uint16_t expected_slam_diagnosis_reporters_;
+  uint16_t expected_relocation_diagnosis_reporters_;
   uint16_t startup_time_;
 
   Communication communication_;

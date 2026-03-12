@@ -46,6 +46,7 @@ def generate_launch_description():
     use_joy = LaunchConfiguration("use_joy")
     use_robot_state_pub = LaunchConfiguration("use_robot_state_pub")
     use_rviz = LaunchConfiguration("use_rviz")
+    use_foxglove = LaunchConfiguration("use_foxglove")
 
     # Declare the launch arguments
     declare_namespace_cmd = DeclareLaunchArgument(
@@ -140,6 +141,12 @@ def generate_launch_description():
         "use_rviz", default_value="False", description="Whether to start RVIZ"
     )
 
+    declare_use_foxglove_cmd = DeclareLaunchArgument(
+        "use_foxglove",
+        default_value="False",
+        description="Whether to start Foxglove",
+    )
+
     # Create our own temporary YAML files that include substitutions
 
     configured_params = ParameterFile(
@@ -183,6 +190,16 @@ def generate_launch_description():
         }.items(),
     )
 
+    start_foxglove_cmd = Node(
+        package="foxglove_bridge",
+        executable="foxglove_bridge",
+        name="foxglove_bridge",
+        output="screen",
+        namespace=namespace,
+        parameters=[configured_params],
+        condition=IfCondition(use_foxglove),
+    )
+
     bringup_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(launch_dir, "bringup_launch.py")),
         launch_arguments={
@@ -224,6 +241,7 @@ def generate_launch_description():
     ld.add_action(declare_joy_cmd)
     ld.add_action(declare_use_robot_state_pub_cmd)
     ld.add_action(declare_use_rviz_cmd)
+    ld.add_action(declare_use_foxglove_cmd)
     ld.add_action(declare_use_respawn_cmd)
 
     # Add the actions to launch all of the navigation nodes
@@ -232,5 +250,6 @@ def generate_launch_description():
     ld.add_action(bringup_cmd)
     ld.add_action(joy_teleop_cmd)
     ld.add_action(rviz_cmd)
+    ld.add_action(start_foxglove_cmd)
 
     return ld

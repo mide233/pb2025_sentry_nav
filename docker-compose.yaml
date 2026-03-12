@@ -23,6 +23,7 @@ services:
       start_period: 5s
     labels:
       - "autoheal=true"
+      - "autoheal.stop.timeout=2"
 
   autoheal:
     image: willfarrell/autoheal:latest
