@@ -7,6 +7,8 @@ USE_COMPOSITION="True"
 NAV_MODE_FILE="/tmp/nav_mode"
 WORLD_NAME="aaa"
 
+export ROS_DOMAIN_ID=12
+
 if [ ! -f "$NAV_MODE_FILE" ]; then
     ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
             world:=$WORLD_NAME \

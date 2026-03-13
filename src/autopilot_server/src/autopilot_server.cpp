@@ -49,8 +49,8 @@ public:
                         expected_relocation_diagnosis_reporters_);
     this->get_parameter("startup_time", startup_time_);
 
-    diagnosis_ = std::make_unique<Diagnosis>(
-        startup_time_, expected_slam_diagnosis_reporters_,
+    diagnosis_ = std::make_unique<diagnosis::Diagnosis>(
+        this->get_clock(), startup_time_, expected_slam_diagnosis_reporters_,
         expected_relocation_diagnosis_reporters_);
 
     last_cmd_vel_msg_ = std::make_shared<geometry_msgs::msg::TwistStamped>();
@@ -73,7 +73,7 @@ public:
             });
     diagnostic_sub_ =
         this->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
-            "/diagnostics_agg", 10,
+            "/diagnostics", 10,
             [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {
               last_pilot_diag_ = diagnosis_->update_health_callback(
                   msg, is_pilot_enabled_by_client_);
@@ -166,7 +166,7 @@ private:
   rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr
       diagnostic_sub_;
 
-  std::unique_ptr<Diagnosis> diagnosis_;
+  std::unique_ptr<diagnosis::Diagnosis> diagnosis_;
   PilotDiag last_pilot_diag_ = PilotDiag::STARTING;
   geometry_msgs::msg::TwistStamped::SharedPtr last_cmd_vel_msg_;
   autopilot_interfaces::msg::VelStamped::SharedPtr last_cmd_spin_msg_;

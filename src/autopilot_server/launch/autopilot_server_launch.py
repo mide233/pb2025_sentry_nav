@@ -105,18 +105,6 @@ def launch_setup(context: LaunchContext) -> list:
                 arguments=["--ros-args", "--log-level", log_level],
             ),
             Node(
-                package="diagnostic_aggregator",
-                executable="aggregator_node",
-                output="screen",
-                parameters=[configured_params],
-            ),
-            Node(
-                package="diagnostic_aggregator",
-                executable="add_analyzer",
-                output="screen",
-                parameters=[configured_params],
-            ),
-            Node(
                 condition=IfCondition(use_rviz),
                 package="rviz2",
                 executable="rviz2",

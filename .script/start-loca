@@ -1,9 +1,18 @@
 #! /bin/bash
 source /home/ws/.script/envinit.bash
 export DISPLAY=:0
+
+NAV_MODE_FILE="/tmp/nav_mode"
+
+if [ -f "$NAV_MODE_FILE" ]; then
+    rm "$NAV_MODE_FILE"
+fi
+echo "LOCA" > "$NAV_MODE_FILE"
+
 ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
-    world:=tlab \
+    world:=aaa \
     slam:=False \
     use_robot_state_pub:=True \
     use_composition:=False \
-    use_rviz:=False
+    use_rviz:=False \
+    use_foxglove:=False

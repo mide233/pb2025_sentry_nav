@@ -8,6 +8,7 @@ services:
       - /dev:/dev:bind
       - /tmp/.X11-unix:/tmp/.X11-unix:bind
       - /run/user/1000/wayland-0:/run/user/1000/wayland-0
+      - /etc/localtime:/etc/localtime:ro
       - .:/home/ws:bind
     environment:
       - DISPLAY=:0
