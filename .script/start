@@ -5,7 +5,7 @@ USE_FOXGLOVE="True"
 USE_RVIZ="False"
 USE_COMPOSITION="True"
 NAV_MODE_FILE="/tmp/nav_mode"
-WORLD_NAME="aaa"
+WORLD_NAME="mb"
 
 export ROS_DOMAIN_ID=12
 
@@ -21,6 +21,10 @@ elif [ -f "$NAV_MODE_FILE" ]; then
     MODE=$(cat "$NAV_MODE_FILE")
     
     if [ "$MODE" = "SLAM" ]; then
+        python3 /home/ws/.script/mapsaver.py &
+        MAPSAVER_PID=$!
+        trap "kill $MAPSAVER_PID" EXIT
+
         ros2 launch pb2025_nav_bringup \
             rm_navigation_reality_launch.py \
             slam:=True \

@@ -24,3 +24,7 @@ pb2025_nav_bringup/map/reality/*.pgm
 
 .log/*
 !.log/.gitkeep
+mapdump/*
+!mapdump/.gitkeep
+src/pb2025_nav_bringup/map/reality/*
+!src/pb2025_nav_bringup/map/reality/.gitkeep
