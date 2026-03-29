@@ -8,7 +8,7 @@ SHELL ["/bin/bash", "-c"]
 ENV SHELL=/bin/bash
 
 RUN rm -f /etc/apt/sources.list && curl -sSL http://mirrors.pku.edu.cn/repoconfig/ubuntu22.04/sources.list -o /etc/apt/sources.list
-RUN curl -sSL https://ghproxy.net/https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
 RUN rm -f /etc/apt/sources.list.d/ros2.sources
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] https://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu jammy main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
 RUN curl -o /etc/ros/rosdep/sources.list.d/20-default.list -L https://mirrors.tuna.tsinghua.edu.cn/github-raw/ros/rosdistro/master/rosdep/sources.list.d/20-default.list
@@ -45,8 +45,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends python3-pip curl wget htop vim unzip screen tini netcat && \
     pip install xmacro gdown
 
-RUN apt install -y \
-    ros-$ROS_DISTRO-foxglove-bridge 
+# due to https://github.com/foxglove/foxglove-sdk/issues/1053, we need to install foxglove-bridge manually
+# RUN apt install -y ros-$ROS_DISTRO-foxglove-bridge 
 
 # Install small_gicp
 RUN apt install -y libeigen3-dev libomp-dev && \
@@ -60,6 +60,7 @@ RUN apt install -y libeigen3-dev libomp-dev && \
     make install && \
     rm -rf /tmp/small_gicp
 
+RUN echo "export DISPLAY=:0" >> /home/$USERNAME/.bashrc
 RUN echo "export ROS_DOMAIN_ID=12" >> /home/$USERNAME/.bashrc
 RUN echo 'export PATH=$PATH:/home/ws/.script' >> /home/$USERNAME/.bashrc
 RUN echo 'alias wsi="source /opt/ros/humble/setup.bash"' >> /home/$USERNAME/.bashrc
@@ -76,7 +77,9 @@ RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \
     && sudo chown root:root /etc/init.d/nav \
     && sudo chmod +x /etc/init.d/nav \
     && sudo rosdep install --from-paths src --ignore-src -y --rosdistro humble \
-    && source /home/ws/.script/envinit.bash
+    && source /home/ws/.script/envinit.bash \
+    && sudo apt-get install ros-humble-rosx-introspection -y \
+    && sudo dpkg -i /home/ws/fox.deb
 
 CMD ["/entrypoint.sh"]
 
