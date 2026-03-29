@@ -151,7 +151,7 @@ private:
     tv.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-    while (running_) {
+    while (running_ && rclcpp::ok()) {
       int client = accept(sock, nullptr, nullptr);
       if (client < 0) {
         if (!running_)

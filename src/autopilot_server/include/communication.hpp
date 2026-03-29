@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstring>
 #include <functional>
+#include <rclcpp/utilities.hpp>
 #include <string>
 #include <sys/socket.h>
 #include <thread>
@@ -16,10 +17,11 @@ public:
   Communication() : sockfd_(-1), running_(false) {}
 
   ~Communication() {
-    stop();
     if (sockfd_ >= 0) {
+      shutdown(sockfd_, 2);
       close(sockfd_);
     }
+    stop();
   }
 
   bool startReceiving(const std::string &ip, uint16_t port,
@@ -89,7 +91,7 @@ private:
     struct sockaddr_in sender_addr;
     socklen_t addr_len = sizeof(sender_addr);
 
-    while (running_) {
+    while (running_ && rclcpp::ok()) {
       ssize_t recv_len = recvfrom(sockfd_, &data, sizeof(StateData), 0,
                                   (struct sockaddr *)&sender_addr, &addr_len);
 

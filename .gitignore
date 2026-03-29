@@ -21,3 +21,6 @@ __pycache__
 
 pb2025_nav_bringup/map/reality/*.yaml
 pb2025_nav_bringup/map/reality/*.pgm
+
+.log/*
+!.log/.gitkeep

@@ -10,6 +10,7 @@ services:
       - /run/user/1000/wayland-0:/run/user/1000/wayland-0
       - /etc/localtime:/etc/localtime:ro
       - .:/home/ws:bind
+      - ./.log:/home/cvdoc/.ros/log:bind
     environment:
       - DISPLAY=:0
     network_mode: host
@@ -25,6 +26,8 @@ services:
     labels:
       - "autoheal=true"
       - "autoheal.stop.timeout=2"
+
+    stop_grace_period: 1s
 
   autoheal:
     image: willfarrell/autoheal:latest
