@@ -28,3 +28,6 @@
 [submodule "src/BehaviorTree.CPP"]
 	path = src/BehaviorTree.CPP
 	url = https://github.com/JinGangRobo/BehaviorTree.CPP
+[submodule "src/slam_toolbox"]
+	path = src/slam_toolbox
+	url = https://github.com/JinGangRobo/slam_toolbox
