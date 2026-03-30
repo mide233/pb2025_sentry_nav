@@ -12,17 +12,23 @@
                          current_hp="{current_hp}"/>
       <ReactiveFallback name="Play the GAME"
                         _while="game_state==4">
+        <ForceFailure>
+          <Sequence>
+            <SetSpin spin_vel="6.0"
+                     _skipIf="current_hp &lt; 300"/>
+            <SetSpin spin_vel="6.0"
+                     _skipIf="current_hp &gt;= 300"/>
+          </Sequence>
+        </ForceFailure>
         <NavToPose name="Back home"
                    goal="0.0,0.0,0.0,0.0,0.0,0.0,0.0"
                    _while="current_hp &lt;= 200"/>
         <AlwaysSuccess _while="rfid_state==1 &amp;&amp; current_hp &lt; 350"/>
         <NavToPose name="Go center area"
-                   goal="4.9,-3.8,0.0,0.0,0.0,0.0,0.0"
+                   goal="4.21,2.85,0.0,0.0,0.0,0.0,0.0"
                    _while="current_hp &gt; 200"/>
-        <Test val="0"
-              msg="I can be reached"/>
       </ReactiveFallback>
-      <SetSpin spin_vel="0.0"
+      <SetSpin spin_vel="2.0"
                _while="game_state!=4"/>
     </ReactiveSequence>
   </BehaviorTree>
@@ -54,12 +60,6 @@
     <Action ID="SetSpin">
       <input_port name="spin_vel"
                   type="BT::AnyTypeAllowed">chassis spin velocity</input_port>
-    </Action>
-    <Action ID="Test">
-      <input_port name="val"
-                  type="unsigned short">dbg val</input_port>
-      <input_port name="msg"
-                  type="std::string">dbg msg</input_port>
     </Action>
   </TreeNodesModel>
 
