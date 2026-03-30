@@ -31,8 +31,10 @@ public:
   Diagnosis(rclcpp::Clock::SharedPtr clock, const uint16_t startup_timeout_sec,
             const uint16_t expected_slam_reporters,
             const uint16_t expected_relocation_reporters)
-      : clock_(clock), expected_slam_reporters_(expected_slam_reporters),
-        expected_relocation_reporters_(expected_relocation_reporters) {
+      : clock_(clock)
+  // , expected_slam_reporters_(expected_slam_reporters),
+  //   expected_relocation_reporters_(expected_relocation_reporters)
+  {
     listener_thread_ = std::thread(&Diagnosis::healthcheck_server_thread, this);
     startup_time_ = std::chrono::steady_clock::now();
     startup_timeout_ = std::chrono::seconds(startup_timeout_sec);
@@ -51,9 +53,9 @@ public:
       const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg,
       bool no_fatal = false) {
     PilotDiag fatal_diag = no_fatal ? PilotDiag::WARNING : PilotDiag::FATAL;
-    uint8_t expected_reporters = current_nav_mode_ == NavMode::SLAM
-                                     ? expected_slam_reporters_
-                                     : expected_relocation_reporters_;
+    // uint8_t expected_reporters = current_nav_mode_ == NavMode::SLAM
+    //                                  ? expected_slam_reporters_
+    //                                  : expected_relocation_reporters_;
 
     for (const auto &status : msg->status) {
       if (status.hardware_id == "")
@@ -68,7 +70,7 @@ public:
       diagnostics_all_[get_diag_key(status)] = diag_stamped;
     }
     clean_old_diagnostics();
-    uint16_t reporter_count = diagnostics_all_.size();
+    // uint16_t reporter_count = diagnostics_all_.size();
 
     if (std::chrono::steady_clock::now() - startup_time_ < startup_timeout_) {
       return PilotDiag::STARTING;
@@ -93,10 +95,13 @@ public:
                     warning.second.status.message.c_str());
       }
       return PilotDiag::WARNING;
-    } else if (expected_reporters != reporter_count) {
-      RCLCPP_ERROR(rclcpp::get_logger("HC"), "Expected %d reporters but got %d",
-                   expected_reporters, reporter_count);
-      return fatal_diag;
+      // Note: Due to apply of planB, we need temporarily disable the reporter
+      // count check.
+      // } else if (expected_reporters != reporter_count) {
+      //   RCLCPP_ERROR(rclcpp::get_logger("HC"), "Expected %d reporters but got
+      //   %d",
+      //                expected_reporters, reporter_count);
+      //   return fatal_diag;
     } else {
       return PilotDiag::READY;
     }
@@ -256,7 +261,7 @@ private:
 
   std::chrono::duration<int64_t> startup_timeout_{15};
   std::chrono::steady_clock::time_point startup_time_;
-  uint16_t expected_slam_reporters_;
-  uint16_t expected_relocation_reporters_;
+  // uint16_t expected_slam_reporters_;
+  // uint16_t expected_relocation_reporters_;
 };
 } // namespace autopilot::diagnosis

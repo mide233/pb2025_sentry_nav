@@ -18,10 +18,11 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterFile
 from nav2_common.launch import RewrittenYaml
+from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -32,6 +33,8 @@ def generate_launch_description():
     namespace = LaunchConfiguration("namespace")
     params_file = LaunchConfiguration("params_file")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    planb_params_file = LaunchConfiguration("planb_params_file")
+    enable_planb = LaunchConfiguration("enable_planb")
     autostart = LaunchConfiguration("autostart")
     use_respawn = LaunchConfiguration("use_respawn")
     log_level = LaunchConfiguration("log_level")
@@ -67,6 +70,20 @@ def generate_launch_description():
         "use_sim_time",
         default_value="True",
         description="Use simulation (Gazebo) clock if true",
+    )
+
+    declare_planb_params_file_cmd = DeclareLaunchArgument(
+        "planb_params_file",
+        default_value=os.path.join(
+            bringup_dir, "config", "reality", "planb_params.yaml"
+        ),
+        description="Plan B parameters for slam relocalization",
+    )
+
+    declare_enable_planb_cmd = DeclareLaunchArgument(
+        "enable_planb",
+        default_value="False",
+        description="Whether to enable Plan B for slam relocalization",
     )
 
     declare_autostart_cmd = DeclareLaunchArgument(
@@ -124,6 +141,7 @@ def generate_launch_description():
     )
 
     start_sync_slam_toolbox_node = Node(
+        condition=IfCondition(PythonExpression(["not ", enable_planb])),
         package="slam_toolbox",
         executable="sync_slam_toolbox_node",
         name="slam_toolbox",
@@ -131,6 +149,23 @@ def generate_launch_description():
         respawn=use_respawn,
         respawn_delay=2.0,
         parameters=[configured_params],
+        arguments=["--ros-args", "--log-level", log_level],
+        remappings=[
+            ("/map", "map"),
+            ("/map_metadata", "map_metadata"),
+            ("/map_updates", "map_updates"),
+        ],
+    )
+    
+    start_loca_slam_toolbox_node = Node(
+        condition=IfCondition(enable_planb),
+        package="slam_toolbox",
+        executable="sync_slam_toolbox_node",
+        name="slam_toolbox",
+        output="screen",
+        respawn=use_respawn,
+        respawn_delay=2.0,
+        parameters=[planb_params_file],
         arguments=["--ros-args", "--log-level", log_level],
         remappings=[
             ("/map", "map"),
@@ -155,6 +190,7 @@ def generate_launch_description():
     )
 
     start_static_transform_node = Node(
+        condition=IfCondition(PythonExpression(["not ", enable_planb])),
         package="tf2_ros",
         executable="static_transform_publisher",
         name="static_transform_publisher_map2odom",
@@ -185,6 +221,8 @@ def generate_launch_description():
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_use_sim_time_cmd)
+    ld.add_action(declare_planb_params_file_cmd)
+    ld.add_action(declare_enable_planb_cmd)
     ld.add_action(declare_autostart_cmd)
     ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
@@ -195,6 +233,7 @@ def generate_launch_description():
 
     ld.add_action(start_pointcloud_to_laserscan_node)
     ld.add_action(start_sync_slam_toolbox_node)
+    ld.add_action(start_loca_slam_toolbox_node)
     ld.add_action(start_point_lio_node)
     ld.add_action(start_static_transform_node)
 

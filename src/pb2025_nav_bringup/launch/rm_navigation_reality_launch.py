@@ -34,6 +34,8 @@ def generate_launch_description():
     # Create the launch configuration variables
     namespace = LaunchConfiguration("namespace")
     slam = LaunchConfiguration("slam")
+    planb_params_file = LaunchConfiguration("planb_params_file")
+    enable_planb = LaunchConfiguration("enable_planb")
     world = LaunchConfiguration("world")
     map_yaml_file = LaunchConfiguration("map")
     prior_pcd_file = LaunchConfiguration("prior_pcd_file")
@@ -99,6 +101,20 @@ def generate_launch_description():
             bringup_dir, "config", "reality", "nav2_params.yaml"
         ),
         description="Full path to the ROS2 parameters file to use for all launched nodes",
+    )
+
+    declare_planb_params_file_cmd = DeclareLaunchArgument(
+        "planb_params_file",
+        default_value=os.path.join(
+            bringup_dir, "config", "reality", "planb_params.yaml"
+        ),
+        description="Plan B parameters for slam relocalization",
+    )
+
+    declare_enable_planb_cmd = DeclareLaunchArgument(
+        "enable_planb",
+        default_value="False",
+        description="Whether to enable Plan B for slam relocalization",
     )
 
     declare_autostart_cmd = DeclareLaunchArgument(
@@ -205,6 +221,8 @@ def generate_launch_description():
         launch_arguments={
             "namespace": namespace,
             "slam": slam,
+            "planb_params_file": planb_params_file,
+            "enable_planb": enable_planb,
             "map": map_yaml_file,
             "prior_pcd_file": prior_pcd_file,
             "use_sim_time": use_sim_time,
@@ -230,6 +248,8 @@ def generate_launch_description():
     # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_slam_cmd)
+    ld.add_action(declare_planb_params_file_cmd)
+    ld.add_action(declare_enable_planb_cmd)
     ld.add_action(declare_world_cmd)
     ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_prior_pcd_file_cmd)

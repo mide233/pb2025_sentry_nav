@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "Usage: apply <map_name>"
+    echo "Example: apply my_map"
+    exit 1
+fi
+
+MAP_NAME=$1
+
+echo "applying map: $MAP_NAME"
+mv /home/ws/mapdump/$MAP_NAME.pgm /home/ws/mapdump/$MAP_NAME.yaml /home/ws/src/pb2025_nav_bringup/map/reality
+mv /home/ws/mapdump/$MAP_NAME.pcd /home/ws/src/pb2025_nav_bringup/pcd/reality
+
+source /home/ws/.script/envinit.bash
+colcon build --symlink-install --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release

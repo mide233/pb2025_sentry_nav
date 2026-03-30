@@ -42,6 +42,8 @@ def generate_launch_description():
     # Create the launch configuration variables
     namespace = LaunchConfiguration("namespace")
     slam = LaunchConfiguration("slam")
+    planb_params_file = LaunchConfiguration("planb_params_file")
+    enable_planb = LaunchConfiguration("enable_planb")
     map_yaml_file = LaunchConfiguration("map")
     prior_pcd_file = LaunchConfiguration("prior_pcd_file")
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -92,6 +94,20 @@ def generate_launch_description():
 
     declare_slam_cmd = DeclareLaunchArgument(
         "slam", default_value="False", description="Whether run a SLAM"
+    )
+
+    declare_planb_params_file_cmd = DeclareLaunchArgument(
+        "planb_params_file",
+        default_value=os.path.join(
+            bringup_dir, "config", "reality", "planb_params.yaml"
+        ),
+        description="Plan B parameters for slam relocalization",
+    )
+
+    declare_enable_planb_cmd = DeclareLaunchArgument(
+        "enable_planb",
+        default_value="False",
+        description="Whether to enable Plan B for slam relocalization",
     )
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
@@ -155,10 +171,12 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(
                     os.path.join(launch_dir, "slam_launch.py")
                 ),
-                condition=IfCondition(slam),
+                condition=IfCondition(PythonExpression([slam, " or ", enable_planb])),
                 launch_arguments={
                     "namespace": namespace,
                     "use_sim_time": use_sim_time,
+                    "planb_params_file": planb_params_file,
+                    "enable_planb": enable_planb,
                     "autostart": autostart,
                     "use_respawn": use_respawn,
                     "params_file": params_file,
@@ -168,7 +186,9 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(
                     os.path.join(launch_dir, "localization_launch.py")
                 ),
-                condition=IfCondition(PythonExpression(["not ", slam])),
+                condition=IfCondition(
+                    PythonExpression(["not ", slam, " and not ", enable_planb])
+                ),
                 launch_arguments={
                     "namespace": namespace,
                     "map": map_yaml_file,
@@ -219,6 +239,8 @@ def generate_launch_description():
     # Declare the launch options
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_slam_cmd)
+    ld.add_action(declare_planb_params_file_cmd)
+    ld.add_action(declare_enable_planb_cmd)
     ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_prior_pcd_file_cmd)
     ld.add_action(declare_use_sim_time_cmd)
