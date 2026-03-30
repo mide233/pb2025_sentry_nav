@@ -9,6 +9,7 @@ from datetime import datetime
 
 TARGET_DIR = "/home/ws/mapdump"
 SOURCE_PCD_FILE = "/home/ws/src/point_lio/PCD/scans.pcd"
+PLANB = True
 
 # 设置日志配置
 LOG_DIR = "/home/ws/.log/mapsaver"
@@ -38,10 +39,16 @@ def check_status():
 def save_map():
     os.makedirs(TARGET_DIR, exist_ok=True)
     timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
-    map_base_path = os.path.join(TARGET_DIR, timestamp)
+    target_dir = TARGET_DIR + "/" + timestamp
+    os.makedirs(target_dir, exist_ok=True)
+    map_base_path = os.path.join(target_dir, timestamp)
 
     # 获取 pgm 和 yaml
     logging.info(f"Saving map as: {map_base_path}")
+    if PLANB:
+        save_cmd = f"bash -c 'source /home/ws/.script/envinit.bash && ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph \"{{filename: {map_base_path}}}\"'"
+        subprocess.run(save_cmd, shell=True)
+
     save_cmd = f"bash -c 'source /home/ws/.script/envinit.bash && ros2 run nav2_map_server map_saver_cli -f {map_base_path}'"
     subprocess.run(save_cmd, shell=True)
 
