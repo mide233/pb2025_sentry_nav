@@ -37,6 +37,7 @@ elif [ -f "$NAV_MODE_FILE" ]; then
             world:=$WORLD_NAME \
             slam:=False \
             use_robot_state_pub:=True \
+            enable_planb:=True \
             use_composition:=$USE_COMPOSITION \
             use_rviz:=$USE_RVIZ \
             use_foxglove:=$USE_FOXGLOVE
@@ -45,6 +46,7 @@ elif [ -f "$NAV_MODE_FILE" ]; then
             world:=$WORLD_NAME \
             slam:=False \
             use_robot_state_pub:=True \
+            enable_planb:=True \
             use_composition:=$USE_COMPOSITION \
             use_rviz:=$USE_RVIZ \
             use_foxglove:=$USE_FOXGLOVE

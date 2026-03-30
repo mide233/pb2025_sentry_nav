@@ -12,6 +12,7 @@ echo "LOCA" > "$NAV_MODE_FILE"
 ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
     world:=aaa \
     slam:=False \
+    enable_planb:=True \
     use_robot_state_pub:=True \
     use_composition:=False \
     use_rviz:=False \
