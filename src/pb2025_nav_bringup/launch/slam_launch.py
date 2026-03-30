@@ -160,7 +160,7 @@ def generate_launch_description():
     start_loca_slam_toolbox_node = Node(
         condition=IfCondition(enable_planb),
         package="slam_toolbox",
-        executable="sync_slam_toolbox_node",
+        executable="localization_slam_toolbox_node",
         name="slam_toolbox",
         output="screen",
         respawn=use_respawn,
