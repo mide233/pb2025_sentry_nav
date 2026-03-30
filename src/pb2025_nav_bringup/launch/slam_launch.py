@@ -40,7 +40,7 @@ def generate_launch_description():
     log_level = LaunchConfiguration("log_level")
 
     # Variables
-    lifecycle_nodes = ["map_saver"]
+    lifecycle_nodes = ["map_saver"] if not enable_planb else ["map_server", "amcl"]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {"use_sim_time": use_sim_time}
@@ -109,7 +109,18 @@ def generate_launch_description():
         respawn=use_respawn,
         respawn_delay=2.0,
         arguments=["--ros-args", "--log-level", log_level],
-        parameters=[configured_params],
+        parameters=[configured_params if not enable_planb else planb_params_file],
+    )
+
+    start_map_server_cmd = Node(
+        condition=IfCondition(enable_planb),
+        package="nav2_map_server",
+        executable="map_server",
+        output="screen",
+        respawn=use_respawn,
+        respawn_delay=2.0,
+        arguments=["--ros-args", "--log-level", log_level],
+        parameters=[planb_params_file],
     )
 
     start_lifecycle_manager_cmd = Node(
@@ -156,12 +167,12 @@ def generate_launch_description():
             ("/map_updates", "map_updates"),
         ],
     )
-    
-    start_loca_slam_toolbox_node = Node(
+
+    start_loca_amcl_node = Node(
         condition=IfCondition(enable_planb),
-        package="slam_toolbox",
-        executable="localization_slam_toolbox_node",
-        name="slam_toolbox",
+        package="nav2_amcl",
+        executable="amcl",
+        name="amcl",
         output="screen",
         respawn=use_respawn,
         respawn_delay=2.0,
@@ -229,11 +240,12 @@ def generate_launch_description():
 
     # Running Map Saver Server
     ld.add_action(start_map_saver_server_cmd)
+    ld.add_action(start_map_server_cmd)
     ld.add_action(start_lifecycle_manager_cmd)
 
     ld.add_action(start_pointcloud_to_laserscan_node)
     ld.add_action(start_sync_slam_toolbox_node)
-    ld.add_action(start_loca_slam_toolbox_node)
+    ld.add_action(start_loca_amcl_node)
     ld.add_action(start_point_lio_node)
     ld.add_action(start_static_transform_node)
 
