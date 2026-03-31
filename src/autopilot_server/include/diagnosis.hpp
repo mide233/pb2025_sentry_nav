@@ -259,7 +259,7 @@ private:
   std::map<std::string, DiagnosticStamped> diagnostics_warnings_;
   std::map<std::string, DiagnosticStamped> diagnostics_all_;
 
-  std::chrono::duration<int64_t> startup_timeout_{15};
+  std::chrono::duration<int64_t> startup_timeout_{10};
   std::chrono::steady_clock::time_point startup_time_;
   // uint16_t expected_slam_reporters_;
   // uint16_t expected_relocation_reporters_;

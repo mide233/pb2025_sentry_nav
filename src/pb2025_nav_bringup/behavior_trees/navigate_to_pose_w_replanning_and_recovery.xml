@@ -3,7 +3,7 @@
       main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <RecoveryNode name="NavigateRecovery"
-                  number_of_retries="10">
+                  number_of_retries="12">
       <PipelineSequence name="NavigateWithReplanning">
         <RateController hz="3.0">
           <RecoveryNode name="ComputePathToPose"
@@ -32,7 +32,7 @@
             <ClearEntireCostmap name="ClearGlobalCostmap-Subtree"
                                 service_name="global_costmap/clear_entirely_global_costmap"/>
           </Sequence>
-          <BackUp backup_dist="0.0"
+          <BackUp backup_dist="1.0"
                   backup_speed="1.0"/>
         </RoundRobin>
       </ReactiveFallback>

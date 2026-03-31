@@ -8,6 +8,7 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <memory>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/parameter_client.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_msgs/msg/bool.hpp>
@@ -85,6 +86,9 @@ public:
     pilot_data_update_timer_ = this->create_wall_timer(
         std::chrono::milliseconds(20), [this]() { pilot_data_update(); });
 
+    amcl_parameters_client_ =
+        std::make_shared<rclcpp::AsyncParametersClient>(this, "/amcl");
+
     if (!communication_.startReceiving(
             state_data_receiving_host_, state_data_receiving_port_,
             [this](const StateData &data) { state_data_callback(data); })) {
@@ -108,6 +112,12 @@ private:
     state_msg.header.stamp = this->get_clock()->now();
     state_msg.current_hp = data.current_hp;
     state_msg.game_state = data.game_state;
+
+    if (data.game_state == 4) // we lock AMCL when game start, for plan b&c.
+      lock_amcl();
+    else
+      unlock_amcl();
+
     state_msg.state_remain_time = data.state_remain_time;
     state_msg.rfid_state = data.rfid_state;
     state_msg.center_area_state = data.center_area_state;
@@ -154,8 +164,84 @@ private:
     }
   }
 
-  void diagnostic_callback(
-      const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {}
+  void lock_amcl() {
+    if (amcl_locked_) {
+      return;
+    }
+    if (!amcl_parameters_client_->service_is_ready()) {
+      RCLCPP_WARN(this->get_logger(), "AMCL parameter service is not ready.");
+      return;
+    }
+
+    amcl_parameters_client_->get_parameters(
+        {"update_min_d", "update_min_a"},
+        [this](std::shared_future<std::vector<rclcpp::Parameter>> future) {
+          auto params = future.get();
+
+          if (amcl_raw_update_min_a_ < 0 || amcl_raw_update_min_d_ < 0)
+            for (const auto &param : params) {
+              if (param.get_name() == "update_min_d") {
+                amcl_raw_update_min_d_ = param.as_double();
+              } else if (param.get_name() == "update_min_a") {
+                amcl_raw_update_min_a_ = param.as_double();
+              }
+            }
+
+          RCLCPP_INFO(
+              this->get_logger(),
+              "saved raw params: update_min_d = %.3f, update_min_a = %.3f",
+              amcl_raw_update_min_d_, amcl_raw_update_min_a_);
+
+          RCLCPP_INFO(this->get_logger(), "locking AMCL...");
+          amcl_parameters_client_->set_parameters(
+              {rclcpp::Parameter("update_min_d", 10000.0),
+               rclcpp::Parameter("update_min_a", 10000.0)});
+
+          RCLCPP_INFO(this->get_logger(), "AMCL locked!");
+          amcl_locked_ = true;
+        });
+  }
+
+  void unlock_amcl() {
+    if (!amcl_locked_) {
+      return;
+    }
+    if (!amcl_parameters_client_->service_is_ready()) {
+      RCLCPP_WARN(this->get_logger(),
+                  "AMCL parameter service is not ready. Cannot unlock AMCL.");
+      return;
+    }
+    if (amcl_raw_update_min_d_ < 0 || amcl_raw_update_min_a_ < 0) {
+      RCLCPP_ERROR(this->get_logger(),
+                   "Original AMCL parameters not saved. Cannot unlock AMCL.");
+      return;
+    }
+
+    RCLCPP_INFO(this->get_logger(), "unlocking AMCL...");
+    amcl_parameters_client_->set_parameters(
+        {rclcpp::Parameter("update_min_d", amcl_raw_update_min_d_),
+         rclcpp::Parameter("update_min_a", amcl_raw_update_min_a_)},
+        [this](std::shared_future<
+               std::vector<rcl_interfaces::msg::SetParametersResult>>
+                   future) {
+          auto results = future.get();
+          bool all_success = true;
+          for (const auto &result : results) {
+            if (!result.successful) {
+              all_success = false;
+              break;
+            }
+          }
+
+          if (all_success) {
+            RCLCPP_INFO(this->get_logger(), "AMCL unlocked!");
+            amcl_locked_ = false;
+          } else {
+            RCLCPP_ERROR(this->get_logger(),
+                         "Failed to unlock AMCL: parameter setting rejected.");
+          }
+        });
+  }
 
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gicp_control_publisher_;
   rclcpp::Publisher<autopilot_interfaces::msg::State>::SharedPtr
@@ -173,6 +259,11 @@ private:
   rclcpp::TimerBase::SharedPtr pilot_data_update_timer_;
   bool is_pilot_enabled_by_client_ = false;
   NavMode desired_nav_mode_ = NavMode::UNKNOWN;
+
+  std::shared_ptr<rclcpp::AsyncParametersClient> amcl_parameters_client_;
+  double amcl_raw_update_min_d_ = -1.0;
+  double amcl_raw_update_min_a_ = -1.0;
+  bool amcl_locked_ = false;
 
   std::string pilot_data_sending_host_;
   int pilot_data_sending_port_;

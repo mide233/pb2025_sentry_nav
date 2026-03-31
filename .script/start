@@ -13,6 +13,7 @@ if [ ! -f "$NAV_MODE_FILE" ]; then
     ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
             world:=$WORLD_NAME \
             slam:=False \
+            enable_planb:=True \
             use_robot_state_pub:=True \
             use_composition:=$USE_COMPOSITION \
             use_rviz:=$USE_RVIZ \
