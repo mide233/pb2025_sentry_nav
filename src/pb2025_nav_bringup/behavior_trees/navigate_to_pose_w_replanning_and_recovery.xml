@@ -3,11 +3,11 @@
       main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <RecoveryNode name="NavigateRecovery"
-                  number_of_retries="12">
+                  number_of_retries="6">
       <PipelineSequence name="NavigateWithReplanning">
         <RateController hz="3.0">
           <RecoveryNode name="ComputePathToPose"
-                        number_of_retries="10">
+                        number_of_retries="2">
             <ComputePathToPose goal="{goal}"
                                path="{path}"
                                planner_id="GridBased"/>
@@ -16,7 +16,7 @@
           </RecoveryNode>
         </RateController>
         <RecoveryNode name="FollowPath"
-                      number_of_retries="10">
+                      number_of_retries="2">
           <FollowPath path="{path}"
                       controller_id="FollowPath"/>
           <ClearEntireCostmap name="ClearLocalCostmap-Context"

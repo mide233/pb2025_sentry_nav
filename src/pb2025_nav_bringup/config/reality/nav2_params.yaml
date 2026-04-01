@@ -16,10 +16,10 @@ point_lio:
     prop_at_freq_of_imu: True
     check_satu: True
     init_map_size: 10
-    point_filter_num: 4 # Options: 4, 3
+    point_filter_num: 3 # Options: 4, 3
     space_down_sample: True
-    filter_size_surf: 0.3 # Options: 0.5, 0.3, 0.2, 0.15, 0.1
-    filter_size_map: 0.3 # Options: 0.5, 0.3, 0.15, 0.1
+    filter_size_surf: 0.2 # Options: 0.5, 0.3, 0.2, 0.15, 0.1
+    filter_size_map: 0.2 # Options: 0.5, 0.3, 0.15, 0.1
     ivox_nearby_type: 18 # Options: 0, 6, 18, 26
     runtime_pos_log_enable: False # Option: True
 
@@ -52,7 +52,7 @@ point_lio:
       satu_acc: 4.0 # the saturation value of IMU's acceleration. not related to the units
       satu_gyro: 35.0 # the saturation value of IMU's angular velocity. not related to the units
       acc_norm: 1.0 # 1.0 for g as unit, 9.81 for m/s^2 as unit of the IMU's acceleration
-      lidar_meas_cov: 0.01 # 0.001
+      lidar_meas_cov: 0.0001
       acc_cov_output: 500.0
       gyr_cov_output: 1000.0
       b_acc_cov: 0.0001
@@ -61,7 +61,7 @@ point_lio:
       imu_meas_omg_cov: 0.1
       gyr_cov_input: 0.1 # for IMU as input model
       acc_cov_input: 0.1 # for IMU as input model
-      plane_thr: 0.1 # 0.05, the threshold for plane criteria, the smaller, the flatter a plane
+      plane_thr: 0.06 # 0.05, the threshold for plane criteria, the smaller, the flatter a plane
       match_s: 81.0
       ivox_grid_resolution: 0.5
       gravity: [0.0, -0.56, -0.83] # gravity to be aligned
@@ -345,8 +345,8 @@ controller_server:
       time_steps: 50
       model_dt: 0.04
       batch_size: 2000
-      vx_std: 2.2 # 增大采样方差，让机器人探索更激进的速度
-      vy_std: 2.2
+      vx_std: 2.0 # 增大采样方差，让机器人探索更激进的速度
+      vy_std: 2.0
       wz_std: 0.1
       vx_max: 4.0 # 根据你机器人的实际物理极限设置
       vx_min: -4.0 # 全向轮应允许对称的后退速度
@@ -390,11 +390,11 @@ controller_server:
         repulsion_weight: 1.5
         critical_weight: 20.0
         consider_footprint: false
-        collision_cost: 10000.0
+        collision_cost: 50000.0
         collision_margin_distance: 0.1
         near_goal_distance: 0.5
-        inflation_radius: 0.55 # (only in Humble)
-        cost_scaling_factor: 10.0 # (only in Humble)
+        inflation_radius: 0.7 # (only in Humble)
+        cost_scaling_factor: 4.0 # (only in Humble)
       PathAlignCritic:
         enabled: true
         cost_power: 1
@@ -575,8 +575,8 @@ behavior_server:
     rotational_acc_lim: 3.2
     # params for pb_nav2_behaviors/BackUpFreeSpace
     service_name: "global_costmap/get_costmap"
-    max_radius: 2.0
-    visualize: false
+    max_radius: 1.0
+    visualize: true
 
 waypoint_follower:
   ros__parameters:
