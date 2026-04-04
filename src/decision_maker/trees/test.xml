@@ -22,15 +22,13 @@
         </ForceFailure>
         <NavToPose name="Back home"
                    goal="0.0,0.0,0.0,0.0,0.0,0.0,0.0"
-                   _skipIf="true"
                    _while="current_hp &lt;= 200"/>
         <AlwaysSuccess _while="rfid_state==1 &amp;&amp; current_hp &lt; 350"/>
         <NavToPose name="Go center area"
-                   goal="4.85,2.36,0.0,0.0,0.0,0.0,0.0"
-                   _skipIf="true"
+                   goal="1.25,4.8,0.0,0.0,0.0,0.0,0.0"
                    _while="current_hp &gt; 200"/>
       </ReactiveFallback>
-      <SetSpin spin_vel="5.0"
+      <SetSpin spin_vel="0.0"
                _while="game_state!=4"/>
     </ReactiveSequence>
   </BehaviorTree>

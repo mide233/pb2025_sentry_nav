@@ -62,24 +62,7 @@ void LoamInterfaceNode::pointCloudCallback(const sensor_msgs::msg::PointCloud2::
   // Here we transform it to the REAL `odom` frame
   auto out = std::make_shared<sensor_msgs::msg::PointCloud2>();
   pcl_ros::transformPointCloud(odom_frame_, tf_odom_to_lidar_odom_, *msg, *out);
-
-  // Filter points by height using PassThrough filter
-  pcl::PCLPointCloud2::Ptr cloud(new pcl::PCLPointCloud2);
-  pcl::PCLPointCloud2::Ptr cloud_filtered(new pcl::PCLPointCloud2);
-
-  pcl_conversions::toPCL(*out, *cloud);
-
-  pcl::PassThrough<pcl::PCLPointCloud2> pass;
-  pass.setInputCloud(cloud);
-  pass.setFilterFieldName("z");
-  pass.setFilterLimits(-std::numeric_limits<double>::infinity(), pointcloud_height_threshold_);
-  pass.filter(*cloud_filtered);
-
-  auto filtered_msg = std::make_shared<sensor_msgs::msg::PointCloud2>();
-  pcl_conversions::fromPCL(*cloud_filtered, *filtered_msg);
-  filtered_msg->header = out->header;
-
-  pcd_pub_->publish(*filtered_msg);
+  pcd_pub_->publish(*out);
 }
 
 void LoamInterfaceNode::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr msg)
