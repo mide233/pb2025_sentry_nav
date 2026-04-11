@@ -24,6 +24,7 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>autopilot_interfaces</depend>
   <depend>behaviortree_cpp</depend>
+  <depend>ament_index_cpp</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_cmake_clang_format</test_depend>

@@ -1,17 +1,34 @@
-FROM ros:humble-ros-base
-
+FROM ros:jazzy
 ARG USERNAME=cvdoc
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 SHELL ["/bin/bash", "-c"]
 ENV SHELL=/bin/bash
+ENV ROS_DISTRO=jazzy
+ENV TZ=Asia/Shanghai
 
-RUN rm -f /etc/apt/sources.list && curl -sSL http://mirrors.pku.edu.cn/repoconfig/ubuntu22.04/sources.list -o /etc/apt/sources.list
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN if id -u $USER_UID ; then userdel `id -un $USER_UID` ; fi
+
+RUN rm -f /etc/apt/sources.list.d/ubuntu.sources && \
+    { \
+    echo 'Types: deb'; \
+    echo 'URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu'; \
+    echo 'Suites: noble noble-updates noble-backports'; \
+    echo 'Components: main restricted universe multiverse'; \
+    echo 'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg'; \
+    echo ''; \
+    echo 'Types: deb'; \
+    echo 'URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu'; \
+    echo 'Suites: noble-security'; \
+    echo 'Components: main restricted universe multiverse'; \
+    echo 'Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg'; \
+    } > /etc/apt/sources.list.d/ubuntu.sources
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
-RUN rm -f /etc/apt/sources.list.d/ros2.sources
-RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] https://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu jammy main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
-RUN curl -o /etc/ros/rosdep/sources.list.d/20-default.list -L https://mirrors.tuna.tsinghua.edu.cn/github-raw/ros/rosdistro/master/rosdep/sources.list.d/20-default.list
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] https://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu noble main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
 
 # Create the user
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -24,7 +41,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 # Install develop tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libc6-dev gcc-12 g++-12 \
+    libc6-dev gcc-14 g++-14 \
     cmake make ninja-build wget \
     openssh-client \
     lsb-release software-properties-common gnupg \
@@ -32,21 +49,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget -O ./llvm-snapshot.gpg.key https://apt.llvm.org/llvm-snapshot.gpg.key && \
     apt-key add ./llvm-snapshot.gpg.key && \
     rm ./llvm-snapshot.gpg.key && \
-    echo "deb https://mirrors.tuna.tsinghua.edu.cn/llvm-apt/jammy/ llvm-toolchain-jammy-14 main" > /etc/apt/sources.list.d/llvm-apt.list && \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/llvm-apt/noble/ llvm-toolchain-noble main" > /etc/apt/sources.list.d/llvm-apt.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends clang-14 clangd-14 clang-format-14 && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 50 && \
-    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 50 && \
-    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 50 && \
-    update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-14 50 && \
-    update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 50
+    version=`apt-cache search clangd- | grep clangd- | awk -F' ' '{print $1}' | sort -V | tail -1 | cut -d- -f2` && \
+    apt-get install -y --no-install-recommends clangd-$version && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 50 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 50 && \
+    update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-$version 50
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3-pip curl wget htop vim unzip screen tini netcat && \
-    pip install xmacro gdown
+RUN apt-get update && apt-get install -y \
+    clangd clang clang-format python3-pip vim htop \
+    gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+    libopencv-dev \
+    libceres-dev \
+    ros-jazzy-camera-info-manager \
+    ros-jazzy-image-transport \
+    ros-jazzy-serial-driver \
+    ros-jazzy-cv-bridge \
+    ros-jazzy-asio-cmake-module \
+    ros-jazzy-angles \
+    ros-jazzy-nav2-common \
+    ros-jazzy-foxglove-bridge \
+    ros-jazzy-rviz2 \
+    libusb-1.0-0-dev \
+    iproute2 net-tools \
+    screen tini unzip
 
-# due to https://github.com/foxglove/foxglove-sdk/issues/1053, we need to install foxglove-bridge manually
-# RUN apt install -y ros-$ROS_DISTRO-foxglove-bridge 
+RUN pip install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple xmacro gdown --break-system-packages
 
 # Install small_gicp
 RUN apt install -y libeigen3-dev libomp-dev && \
@@ -60,14 +89,25 @@ RUN apt install -y libeigen3-dev libomp-dev && \
     make install && \
     rm -rf /tmp/small_gicp
 
+# Install openvino runtime
+RUN wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
+    apt-key add ./GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
+    rm ./GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
+    echo "deb https://apt.repos.intel.com/openvino ubuntu24 main" > /etc/apt/sources.list.d/intel-openvino.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends openvino-2025.2.0 && \
+    apt-get autoremove -y && apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/*
+
 RUN echo "export DISPLAY=:0" >> /home/$USERNAME/.bashrc
 RUN echo "export ROS_DOMAIN_ID=12" >> /home/$USERNAME/.bashrc
 RUN echo 'export PATH=$PATH:/home/ws/.script' >> /home/$USERNAME/.bashrc
-RUN echo 'alias wsi="source /opt/ros/humble/setup.bash"' >> /home/$USERNAME/.bashrc
+RUN echo 'alias wsi="source /opt/ros/jazzy/setup.bash"' >> /home/$USERNAME/.bashrc
 RUN echo 'alias ini="source install/setup.bash"' >> /home/$USERNAME/.bashrc
 
 USER $USERNAME
 RUN sudo mkdir /home/ws && sudo chown $USERNAME:$USERNAME /home/ws
+RUN sudo curl -o /etc/ros/rosdep/sources.list.d/20-default.list -L https://mirrors.tuna.tsinghua.edu.cn/github-raw/ros/rosdistro/master/rosdep/sources.list.d/20-default.list
 RUN export ROSDISTRO_INDEX_URL=https://mirrors.tuna.tsinghua.edu.cn/rosdistro/index-v4.yaml && rosdep update || true
 
 RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \
@@ -76,10 +116,8 @@ RUN --mount=type=bind,target=/home/ws,source=.,readonly=false cd /home/ws \
     && sudo chown $USERNAME:$USERNAME /entrypoint.sh && sudo chmod +x /entrypoint.sh \
     && sudo chown root:root /etc/init.d/nav \
     && sudo chmod +x /etc/init.d/nav \
-    && sudo rosdep install --from-paths src --ignore-src -y --rosdistro humble \
-    && source /home/ws/.script/envinit.bash \
-    && sudo apt-get install ros-humble-rosx-introspection -y \
-    && sudo dpkg -i /home/ws/fox.deb
+    && sudo rosdep install --from-paths src --ignore-src -y --rosdistro jazzy \
+    && source /home/ws/.script/envinit.bash 
 
 CMD ["/entrypoint.sh"]
 

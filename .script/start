@@ -10,9 +10,6 @@ WORLD_NAME="plan_b"
 export DISPLAY=:0
 export ROS_DOMAIN_ID=12
 
-ros2 bag record -a -o /home/ws/bagdump/$(date +"%Y%m%d-%H%M%S") &
-BAG_PID=$!
-trap "kill $BAG_PID" EXIT
 
 if [ ! -f "$NAV_MODE_FILE" ]; then
     ros2 launch pb2025_nav_bringup rm_navigation_reality_launch.py \
